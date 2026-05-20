@@ -1,0 +1,10 @@
+{
+  "chainId": 1952,
+  "deployer": "0x22B13afD9c5fa932EE439Cbca64890770F604284",
+  "deployedAt": "2026-05-20T16:49:38.068Z",
+  "contracts": {
+    "duelCredit": "0x87e31cc7fe76dc7d70c70867e34fef1447e339e9",
+    "kickerNft": "0xb614e51deb5e4078b6bbb28ee32a70bc547e19df",
+    "penaltyDuel": "0xbe9f77afd1d64e0f76572f08c4ed34a6a1ccbfd1"
+  }
+}
