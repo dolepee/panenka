@@ -52,12 +52,6 @@ const countries = [
   { id: 7, name: "Morocco" },
   { id: 8, name: "USA" },
 ];
-const previewDuels = [
-  { id: 17, stake: 5, country: "Nigeria", status: "open" },
-  { id: 18, stake: 3, country: "Japan", status: "committed" },
-  { id: 19, stake: 8, country: "Brazil", status: "open" },
-];
-const directionLabels = ["Left", "Middle", "Right"];
 
 const publicClient = createPublicClient({ chain: xLayer, transport: http() });
 
@@ -67,6 +61,10 @@ function short(address: string) {
 
 function txLink(hash: string) {
   return `${XLAYER_EXPLORER}/tx/${hash}`;
+}
+
+function explorerAddress(address: string) {
+  return `${XLAYER_EXPLORER}/address/${address}`;
 }
 
 function planKey(account: string, duelId: number) {
@@ -100,6 +98,16 @@ function loadPlan(account: string, duelId: number): StoredPlan | null {
 
 function savePlan(account: string, plan: StoredPlan) {
   localStorage.setItem(planKey(account, plan.duelId), JSON.stringify(plan));
+}
+
+function localPlanIds(account: string) {
+  if (!account) return [];
+  const prefix = `panenka-plan:${account.toLowerCase()}:`;
+  return Object.keys(localStorage)
+    .filter((key) => key.startsWith(prefix))
+    .map((key) => Number(key.slice(prefix.length)))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
 }
 
 function App() {
@@ -221,6 +229,7 @@ function Play({
   const [nextDuelId, setNextDuelId] = useState<number | null>(null);
   const [tokenId, setTokenId] = useState<bigint>(0n);
   const [balance, setBalance] = useState<bigint>(0n);
+  const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
   const canWrite = Boolean(account && provider && hasContracts);
 
   useEffect(() => {
@@ -242,6 +251,7 @@ function Play({
       setNextDuelId(Number(reads[0]));
       setTokenId(reads[1] as bigint);
       setBalance(reads[2] as bigint);
+      setStoredPlanIds(account ? localPlanIds(account) : []);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Read failed.");
     }
@@ -309,7 +319,10 @@ function Play({
       `Creating duel #${duelId}`,
     );
     savePlan(account, plan);
+    setStoredPlanIds(localPlanIds(account));
     setRevealDuelId(String(duelId));
+    setJoinDuelId(String(duelId));
+    setStatus(`Duel #${duelId} created. Switch to Wallet B and join this same duel ID.`);
   }
 
   async function joinDuel() {
@@ -328,14 +341,16 @@ function Play({
       `Joining duel #${duelId}`,
     );
     savePlan(account, plan);
+    setStoredPlanIds(localPlanIds(account));
     setRevealDuelId(String(duelId));
+    setStatus(`Duel #${duelId} joined. Reveal with this wallet, then switch back so the creator can reveal.`);
   }
 
   async function revealDuel() {
     if (!account || !revealDuelId) return;
     const plan = loadPlan(account, Number(revealDuelId));
     if (!plan) {
-      setStatus("No local commitment found for this wallet and duel.");
+      setStatus("No local hidden plan found for this wallet. Reveal must be done from the same wallet/browser that created or joined the duel.");
       return;
     }
     await write(
@@ -348,24 +363,44 @@ function Play({
         }),
       `Revealing duel #${revealDuelId}`,
     );
+    setStatus(`Reveal for duel #${revealDuelId} confirmed. If both wallets revealed, the duel settled onchain.`);
   }
 
   return (
     <section className="page">
-      <p className="eyebrow">Create or join</p>
-      <h2>One duel, five hidden choices.</h2>
+      <p className="eyebrow">Play path</p>
+      <h2>Use two wallets: one creates, one joins.</h2>
+      <p className="lede compact">
+        Panenka is a commit-reveal duel. Wallet A hides five shots and saves, Wallet B hides five choices, then both reveal.
+        The contract settles the score only after both hidden plans are revealed.
+      </p>
 
       <div className="statusPanel">
         <span>{hasContracts ? `X Layer ${XLAYER_CHAIN_ID}` : "Contracts not configured yet"}</span>
         <span>{account ? short(account) : "Wallet not connected"}</span>
         <span>{nextDuelId ? `Next duel #${nextDuelId}` : "Awaiting deploy"}</span>
+        <span>{storedPlanIds.length ? `Local reveal plan: #${storedPlanIds.join(", #")}` : "No local reveal plan yet"}</span>
         <strong>{status}</strong>
         {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">View last tx</a> : null}
       </div>
 
+      <article className="guideCard">
+        <div>
+          <span className="badge">Solo test instructions</span>
+          <h3>What you should click</h3>
+        </div>
+        <ol className="guideSteps">
+          <li><strong>Wallet A:</strong> connect, mint a kicker if needed, claim DCR, approve, then create a hidden duel.</li>
+          <li><strong>Wallet B:</strong> switch accounts, mint/claim/approve, paste the duel ID, then join with a hidden plan.</li>
+          <li><strong>Reveal:</strong> reveal once from Wallet B, switch back to Wallet A, reveal the same duel ID again.</li>
+          <li><strong>Done:</strong> the second reveal settles the duel, transfers DuelCredit, and updates kicker stats.</li>
+        </ol>
+      </article>
+
       <div className="grid">
         <article className="panel">
-          <h3>1. Pick a country kicker</h3>
+          <h3>1. Wallet setup</h3>
+          <p className="muted">Each wallet needs exactly one country kicker. This is your duel identity and stat card.</p>
           <div className="countryGrid">
             {countries.map((country) => (
               <button className={selectedCountry.id === country.id ? "selected" : ""} key={country.id} onClick={() => setSelectedCountry(country)}>
@@ -379,7 +414,7 @@ function Play({
         </article>
 
         <article className="panel">
-          <h3>2. Fuel the duel</h3>
+          <h3>2. Fuel and approve</h3>
           <p className="muted">DuelCredit is in-game credit. It cannot move wallet-to-wallet; it routes only through the duel contract.</p>
           <div className="balance">{formatUnits(balance, 18)} DCR</div>
           <div className="actionRow">
@@ -389,39 +424,48 @@ function Play({
         </article>
 
         <article className="panel">
-          <h3>3. Create duel</h3>
+          <h3>3A. Wallet A creates</h3>
           <label>
             Stake
             <input value={stake} onChange={(event) => setStake(event.target.value)} />
           </label>
-          <p className="muted">The app stores your hidden plan locally until reveal. The chain only sees the commitment hash first.</p>
+          <p className="muted">
+            Click this from the first wallet. Copy the duel ID from the status line, then switch to the opponent wallet.
+            The hidden plan stays in this browser for the later reveal.
+          </p>
           <button onClick={createDuel}>Create hidden duel</button>
         </article>
 
         <article className="panel">
-          <h3>4. Join or reveal</h3>
+          <h3>3B / 4. Join, then reveal</h3>
           <label>
-            Duel ID to join
+            Wallet B: duel ID to join
             <input value={joinDuelId} onChange={(event) => setJoinDuelId(event.target.value)} placeholder="17" />
           </label>
           <button onClick={joinDuel}>Join with hidden plan</button>
           <label>
-            Duel ID to reveal
+            Current wallet: duel ID to reveal
             <input value={revealDuelId} onChange={(event) => setRevealDuelId(event.target.value)} placeholder="17" />
           </label>
           <button onClick={revealDuel}>Reveal stored plan</button>
         </article>
       </div>
 
-      <article className="panel previewList">
-        <h3>Demo lobby preview</h3>
-        {previewDuels.map((duel) => (
-          <div className="row" key={duel.id}>
-            <span>#{duel.id} · {duel.country}</span>
-            <strong>{duel.stake} DCR</strong>
-            <span>{duel.status}</span>
-          </div>
-        ))}
+      <article className="panel proofList">
+        <h3>Already proven on X Layer testnet</h3>
+        <p className="muted">
+          Duel #1 settled end to end: Nigeria kicker beat France, credits moved 95 to 105, and NFT stats updated onchain.
+        </p>
+        <div className="row">
+          <span>PenaltyDuel</span>
+          <a href={explorerAddress(addresses.penaltyDuel ?? "")} target="_blank" rel="noreferrer">{short(addresses.penaltyDuel ?? "0x0000000000000000000000000000000000000000")}</a>
+        </div>
+        <div className="row">
+          <span>Settlement tx</span>
+          <a href={txLink("0x753d66f00fff9d28969de5c2f194c480b53c498168b1bba02084ecc66dbe9f98")} target="_blank" rel="noreferrer">
+            0x753d...9f98
+          </a>
+        </div>
       </article>
     </section>
   );
