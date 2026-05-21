@@ -40,6 +40,14 @@ Readback after settlement:
 - Player one: Nigeria kicker, `105` DuelCredit, `1` win, `1` streak.
 - Player two: France kicker, `95` DuelCredit, `1` loss.
 
+One-wallet bot proof:
+
+- Duel: `#3`
+- User create tx: `0x4bee457c923c5b56d0cd59aaebea89ab0fcbc6b17d38a0156567173fcfb7841f`
+- Bot join tx: `0x3e2b68ef20ff5dcd463a6907d4a878d9f408c4114884dce9156b44f3f07efaa5`
+- User reveal tx: `0x03dcd94f84776141e43455eb7fc03b91d923e1f65915525ec3cfde664efefe90`
+- Bot reveal / settle tx: `0xc925226d6e7bb64e44eff769a7801847960f481e37c8622945eba1a6b3b7364f`
+
 ## Commands
 
 ```bash
