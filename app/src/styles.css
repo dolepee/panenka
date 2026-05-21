@@ -160,6 +160,26 @@ h2 {
   margin-bottom: 0;
 }
 
+.heroProof {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.heroProof span,
+.heroTx {
+  padding: 8px 10px;
+  border: 1px solid rgba(68, 244, 196, 0.2);
+  border-radius: 999px;
+  color: rgba(248, 243, 231, 0.74);
+  background: rgba(68, 244, 196, 0.07);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .ctaRow {
   display: flex;
   gap: 14px;
@@ -253,6 +273,13 @@ h2 {
 
 .score strong {
   color: #44f4c4;
+}
+
+.heroTx {
+  width: fit-content;
+  margin-top: 16px;
+  border-color: rgba(248, 255, 112, 0.2);
+  background: rgba(248, 255, 112, 0.06);
 }
 
 .page {

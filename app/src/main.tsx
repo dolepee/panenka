@@ -233,20 +233,26 @@ function Home() {
   return (
     <section className="hero">
       <div>
-        <p className="eyebrow">World Cup duels on X Layer</p>
-        <h1>Commit the shot. Reveal the moment.</h1>
+        <p className="eyebrow">World Cup shootouts on X Layer</p>
+        <h1>Play a penalty duel in one wallet.</h1>
         <p className="lede">
-          Panenka turns penalty shootouts into onchain duels. Pick a country kicker, hide your five shots and saves, reveal, and let the contract settle the scoreboard.
+          Mint a country kicker, commit hidden shots, and face Panenka Bot in under a minute. Every reveal, round, score,
+          credit transfer, and leaderboard move is verifiable on X Layer.
         </p>
+        <div className="heroProof">
+          <span>1 wallet vs bot</span>
+          <span>remote friend links</span>
+          <span>onchain settlement</span>
+        </div>
         <div className="ctaRow">
-        <a className="primary" href="#play">Play the bot</a>
+          <a className="primary" href="#play">Play the bot</a>
           <a className="secondary" href="#leaderboard">View leaderboard</a>
         </div>
       </div>
       <div className="duelCard">
         <div className="duelTop">
-          <span>Round 5</span>
-          <span>X Layer tx pending</span>
+          <span>Duel #5 settled</span>
+          <span>X Layer proof</span>
         </div>
         <div className="pitch">
           <div className="goal" />
@@ -255,9 +261,10 @@ function Home() {
         </div>
         <div className="score">
           <span>Nigeria 3</span>
-          <strong>2</strong>
-          <span>France</span>
+          <strong>4</strong>
+          <span>Japan Bot</span>
         </div>
+        <div className="heroTx">latest proof · bot won duel #5 · leaderboard updated</div>
       </div>
     </section>
   );
@@ -563,10 +570,10 @@ function Play({
   return (
     <section className="page">
       <p className="eyebrow">Play path</p>
-      <h2>One wallet can test against Panenka Bot.</h2>
+      <h2>Play the bot now. Invite a friend later.</h2>
       <p className="lede compact">
-        Panenka is still a two-player commit-reveal game by design. For easier testing, your wallet creates and reveals while
-        Panenka Bot acts as the opponent wallet. Real PvP with a second human wallet still works.
+        Your wallet creates and reveals. Panenka Bot joins as the opponent, or you send an invite link to a remote friend.
+        The contract still settles a real two-player commit-reveal shootout.
       </p>
 
       <div className="statusPanel">
@@ -637,11 +644,10 @@ function Play({
           <h3>What you should click</h3>
         </div>
         <ol className="guideSteps">
-          <li><strong>You:</strong> connect any injected EVM wallet, mint a kicker, claim DCR, approve, then create a hidden duel.</li>
-          <li><strong>Friend:</strong> send the invite link. They open it, connect, mint/claim/approve, then click Human wallet joins.</li>
-          <li><strong>Bot option:</strong> if no friend is ready, click Bot joins this duel to test immediately.</li>
-          <li><strong>You:</strong> reveal your stored plan from the same browser and wallet that created the duel.</li>
-          <li><strong>Opponent:</strong> your friend reveals from their browser, or you click Bot reveals and settles.</li>
+          <li><strong>Fast path:</strong> mint if needed, claim DCR, approve, create a duel, click Bot joins, reveal, then Bot reveals.</li>
+          <li><strong>Friend path:</strong> create a duel, copy the invite link, and send it to a remote friend. They join from their own wallet.</li>
+          <li><strong>Important:</strong> the same browser that created or joined must reveal, because the hidden plan is stored locally.</li>
+          <li><strong>Proof:</strong> after settlement, the app shows winner, score, five round outcomes, and the X Layer transaction.</li>
         </ol>
       </article>
 
