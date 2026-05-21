@@ -78,6 +78,7 @@ const countries = [
   { id: 7, name: "Morocco" },
   { id: 8, name: "USA" },
 ];
+const countryById = Object.fromEntries(countries.map((country) => [country.id, country.name]));
 
 const publicClient = createPublicClient({ chain: xLayer, transport: http() });
 
@@ -834,17 +835,38 @@ function Me({
       <h2>{account ? short(account) : "Connect to load your duel card."}</h2>
       <div className="panel profile">
         <span className="badge">{stats ? `Level ${stats[4]}` : "Level ?"}</span>
-        <h3>{tokenId > 0n ? `Kicker #${tokenId}` : "No kicker minted yet"}</h3>
-        <p>{formatUnits(balance, 18)} DCR available. Credits are in-game and route only through the duel contract.</p>
+        <h3>
+          {tokenId > 0n && stats
+            ? `${countryById[Number(stats[0])] ?? `Country ${stats[0]}`} Kicker #${tokenId}`
+            : tokenId > 0n
+              ? `Kicker #${tokenId}`
+              : "No kicker minted yet"}
+        </h3>
+        <p>
+          {account
+            ? `${formatUnits(balance, 18)} DCR available. Use it to create bot duels or remote friend duels.`
+            : "Connect your wallet to load your country kicker, record, DCR balance, and next action."}
+        </p>
         {stats ? (
-          <div className="statGrid">
-            <span>Country #{stats[0]}</span>
-            <span>{stats[1]} wins</span>
-            <span>{stats[2]} losses</span>
-            <span>{stats[3]} streak</span>
+          <div className="playerCard">
+            <div className="recordHero">
+              <span>Record</span>
+              <strong>{stats[1]} - {stats[2]}</strong>
+              <p>{stats[3]} current streak</p>
+            </div>
+            <div className="statGrid">
+              <span>{countryById[Number(stats[0])] ?? `Country ${stats[0]}`}</span>
+              <span>{stats[1]} wins</span>
+              <span>{stats[2]} losses</span>
+              <span>{stats[3]} streak</span>
+            </div>
           </div>
         ) : null}
-        {!account ? <button onClick={connect}>Connect wallet</button> : null}
+        <div className="actionRow">
+          {!account ? <button onClick={connect}>Connect wallet</button> : null}
+          {account ? <a className="primary" href="#play">{tokenId > 0n ? "Play again" : "Mint and play"}</a> : null}
+          {account ? <a className="secondary" href="#leaderboard">Check leaderboard</a> : null}
+        </div>
       </div>
     </section>
   );
