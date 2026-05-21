@@ -383,6 +383,36 @@ h2 {
   font-weight: 900;
 }
 
+.settlementCard {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 8px;
+  padding: 18px;
+  border: 1px solid rgba(248, 255, 112, 0.28);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(248, 255, 112, 0.12), transparent 18rem),
+    rgba(255, 255, 255, 0.05);
+}
+
+.settlementCard span {
+  color: #f8ff70;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.settlementCard strong {
+  font-size: 22px;
+}
+
+.settlementCard a {
+  width: fit-content;
+  color: #83ffe3;
+  font-weight: 900;
+}
+
 .countryGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

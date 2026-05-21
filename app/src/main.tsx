@@ -4,6 +4,7 @@ import {
   createPublicClient,
   createWalletClient,
   custom,
+  decodeEventLog,
   encodeAbiParameters,
   formatUnits,
   http,
@@ -270,6 +271,7 @@ function Play({
   const [botBusy, setBotBusy] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
   const [duelView, setDuelView] = useState<DuelView | null>(null);
+  const [settlementText, setSettlementText] = useState("");
   const canWrite = Boolean(account && provider && hasContracts);
 
   useEffect(() => {
@@ -346,7 +348,8 @@ function Play({
     setStatus(`${label}...`);
     const hash = await action();
     setLastTx(hash);
-    await publicClient.waitForTransactionReceipt({ hash });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    readSettlementFromReceipt(receipt);
     setStatus(`${label} confirmed.`);
     await refresh();
     await inspectDuel(undefined, false);
@@ -454,6 +457,23 @@ function Play({
     setStatus(`Reveal for duel #${revealDuelId} confirmed. If both wallets revealed, the duel settled onchain.`);
   }
 
+  function readSettlementFromReceipt(receipt: { logs: readonly { topics: readonly `0x${string}`[]; data: `0x${string}`; address: `0x${string}` }[] }) {
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== addresses.penaltyDuel?.toLowerCase()) continue;
+      try {
+        const decoded = decodeEventLog({ abi: penaltyDuelAbi, data: log.data, topics: [...log.topics] as any });
+        if (decoded.eventName !== "DuelSettled") continue;
+        const args = decoded.args as any;
+        const p1Score = Number(args.p1Score);
+        const p2Score = Number(args.p2Score);
+        const winner = args.draw ? "Draw" : short(args.winner);
+        setSettlementText(args.draw ? `Duel #${args.duelId} settled as a ${p1Score}-${p2Score} draw.` : `Duel #${args.duelId} settled: ${winner} won ${p1Score}-${p2Score}.`);
+      } catch {
+        // Ignore non-Panenka logs in the same transaction.
+      }
+    }
+  }
+
   async function callBot(action: "join" | "reveal") {
     const duelId = Number(action === "join" ? joinDuelId || revealDuelId : revealDuelId || joinDuelId);
     if (!duelId) {
@@ -471,6 +491,8 @@ function Play({
       const body = await result.json();
       if (!result.ok) throw new Error(body.error ?? "Bot request failed.");
       setLastTx(body.hash);
+      const receipt = await publicClient.getTransactionReceipt({ hash: body.hash });
+      readSettlementFromReceipt(receipt);
       setStatus(
         action === "join"
           ? `Panenka Bot joined duel #${duelId}. Reveal from your wallet next.`
@@ -538,6 +560,14 @@ function Play({
             <strong>{duelView.nextStep}</strong>
           </div>
           <button onClick={() => inspectDuel(undefined, true)}>Refresh duel state</button>
+        </article>
+      ) : null}
+
+      {settlementText ? (
+        <article className="settlementCard">
+          <span>Settled onchain</span>
+          <strong>{settlementText}</strong>
+          {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">Open settlement tx</a> : null}
         </article>
       ) : null}
 
