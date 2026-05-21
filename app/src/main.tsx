@@ -53,6 +53,11 @@ type DuelView = {
   p2Revealed: boolean;
   nextStep: string;
 };
+type RoundResult = {
+  round: number;
+  youGoal: boolean;
+  botGoal: boolean;
+};
 
 const countries = [
   { id: 1, name: "Argentina" },
@@ -272,6 +277,7 @@ function Play({
   const [inviteLink, setInviteLink] = useState("");
   const [duelView, setDuelView] = useState<DuelView | null>(null);
   const [settlementText, setSettlementText] = useState("");
+  const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
   const canWrite = Boolean(account && provider && hasContracts);
 
   useEffect(() => {
@@ -458,10 +464,20 @@ function Play({
   }
 
   function readSettlementFromReceipt(receipt: { logs: readonly { topics: readonly `0x${string}`[]; data: `0x${string}`; address: `0x${string}` }[] }) {
+    const rounds: RoundResult[] = [];
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== addresses.penaltyDuel?.toLowerCase()) continue;
       try {
         const decoded = decodeEventLog({ abi: penaltyDuelAbi, data: log.data, topics: [...log.topics] as any });
+        if (decoded.eventName === "RoundResolved") {
+          const args = decoded.args as any;
+          rounds.push({
+            round: Number(args.round),
+            youGoal: Boolean(args.p1Goal),
+            botGoal: Boolean(args.p2Goal),
+          });
+          continue;
+        }
         if (decoded.eventName !== "DuelSettled") continue;
         const args = decoded.args as any;
         const p1Score = Number(args.p1Score);
@@ -472,6 +488,7 @@ function Play({
         // Ignore non-Panenka logs in the same transaction.
       }
     }
+    if (rounds.length) setRoundResults(rounds.sort((a, b) => a.round - b.round));
   }
 
   async function callBot(action: "join" | "reveal") {
@@ -567,6 +584,16 @@ function Play({
         <article className="settlementCard">
           <span>Settled onchain</span>
           <strong>{settlementText}</strong>
+          {roundResults.length ? (
+            <div className="roundStrip">
+              {roundResults.map((round) => (
+                <div key={round.round} className="roundChip">
+                  <span>Round {round.round}</span>
+                  <strong>{round.youGoal ? "You goal" : "You saved"} · {round.botGoal ? "Bot goal" : "Bot saved"}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">Open settlement tx</a> : null}
         </article>
       ) : null}

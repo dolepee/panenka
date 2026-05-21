@@ -413,6 +413,32 @@ h2 {
   font-weight: 900;
 }
 
+.roundStrip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.roundChip {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid rgba(248, 243, 231, 0.1);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.roundChip span {
+  color: rgba(248, 243, 231, 0.56);
+  font-size: 10px;
+}
+
+.roundChip strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
 .countryGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -544,6 +570,10 @@ h2 {
   }
 
   .duelState {
+    grid-template-columns: 1fr;
+  }
+
+  .roundStrip {
     grid-template-columns: 1fr;
   }
 
