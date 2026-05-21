@@ -63,6 +63,13 @@ function txLink(hash: string) {
   return `${XLAYER_EXPLORER}/tx/${hash}`;
 }
 
+function playLink(duelId: number | string) {
+  const url = new URL(location.href);
+  url.hash = "play";
+  url.searchParams.set("duel", String(duelId));
+  return url.toString();
+}
+
 function explorerAddress(address: string) {
   return `${XLAYER_EXPLORER}/address/${address}`;
 }
@@ -231,9 +238,16 @@ function Play({
   const [balance, setBalance] = useState<bigint>(0n);
   const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
   const [botBusy, setBotBusy] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
   const canWrite = Boolean(account && provider && hasContracts);
 
   useEffect(() => {
+    const invitedDuelId = new URLSearchParams(location.search).get("duel");
+    if (invitedDuelId) {
+      setJoinDuelId(invitedDuelId);
+      setRevealDuelId(invitedDuelId);
+      setInviteLink(playLink(invitedDuelId));
+    }
     void refresh();
   }, [account]);
 
@@ -323,7 +337,14 @@ function Play({
     setStoredPlanIds(localPlanIds(account));
     setRevealDuelId(String(duelId));
     setJoinDuelId(String(duelId));
-    setStatus(`Duel #${duelId} created. Switch to Wallet B and join this same duel ID.`);
+    const link = playLink(duelId);
+    setInviteLink(link);
+    try {
+      await navigator.clipboard?.writeText(link);
+      setStatus(`Duel #${duelId} created. Invite link copied. Send it to your friend.`);
+    } catch {
+      setStatus(`Duel #${duelId} created. Copy the invite link and send it to your friend.`);
+    }
   }
 
   async function joinDuel() {
@@ -397,6 +418,22 @@ function Play({
     }
   }
 
+  async function copyInvite() {
+    const duelId = joinDuelId || revealDuelId;
+    if (!duelId) {
+      setStatus("Create a duel or enter a duel ID first.");
+      return;
+    }
+    const link = playLink(duelId);
+    setInviteLink(link);
+    try {
+      await navigator.clipboard?.writeText(link);
+      setStatus(`Invite link for duel #${duelId} copied.`);
+    } catch {
+      setStatus(`Invite link ready for duel #${duelId}.`);
+    }
+  }
+
   return (
     <section className="page">
       <p className="eyebrow">Play path</p>
@@ -417,14 +454,15 @@ function Play({
 
       <article className="guideCard">
         <div>
-          <span className="badge">Solo test instructions</span>
+          <span className="badge">Remote play ready</span>
           <h3>What you should click</h3>
         </div>
         <ol className="guideSteps">
           <li><strong>You:</strong> connect any injected EVM wallet, mint a kicker, claim DCR, approve, then create a hidden duel.</li>
-          <li><strong>Bot:</strong> click Bot joins this duel. It commits its own hidden choices from a server-side wallet.</li>
+          <li><strong>Friend:</strong> send the invite link. They open it, connect, mint/claim/approve, then click Human wallet joins.</li>
+          <li><strong>Bot option:</strong> if no friend is ready, click Bot joins this duel to test immediately.</li>
           <li><strong>You:</strong> reveal your stored plan from the same browser and wallet that created the duel.</li>
-          <li><strong>Bot:</strong> click Bot reveals and settles. The second reveal settles credits and kicker stats onchain.</li>
+          <li><strong>Opponent:</strong> your friend reveals from their browser, or you click Bot reveals and settles.</li>
         </ol>
       </article>
 
@@ -464,6 +502,11 @@ function Play({
             Your wallet commits a hidden five-round plan. The chain sees only the hash until you reveal.
           </p>
           <button onClick={createDuel}>Create hidden duel</button>
+          <div className="inviteBox">
+            <span>Invite link</span>
+            <code>{inviteLink || "Create a duel first, then send the generated link to your friend."}</code>
+            <button onClick={copyInvite}>Copy invite link</button>
+          </div>
         </article>
 
         <article className="panel">

@@ -363,6 +363,31 @@ h2 {
   margin-top: 18px;
 }
 
+.inviteBox {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(68, 244, 196, 0.18);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.inviteBox span {
+  color: rgba(248, 243, 231, 0.58);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inviteBox code {
+  overflow-wrap: anywhere;
+  color: #83ffe3;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .balance {
   margin: 18px 0;
   font-size: 34px;
