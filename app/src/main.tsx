@@ -278,6 +278,7 @@ function Play({
   const [duelView, setDuelView] = useState<DuelView | null>(null);
   const [settlementText, setSettlementText] = useState("");
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
+  const [animatedRound, setAnimatedRound] = useState(0);
   const canWrite = Boolean(account && provider && hasContracts);
 
   useEffect(() => {
@@ -294,6 +295,16 @@ function Play({
     const duelId = revealDuelId || joinDuelId;
     if (duelId) void inspectDuel(duelId, false);
   }, [revealDuelId, joinDuelId, account]);
+
+  useEffect(() => {
+    if (!roundResults.length) {
+      setAnimatedRound(0);
+      return;
+    }
+    setAnimatedRound(1);
+    const timers = roundResults.slice(1).map((_, index) => window.setTimeout(() => setAnimatedRound(index + 2), (index + 1) * 700));
+    return () => timers.forEach(window.clearTimeout);
+  }, [roundResults]);
 
   async function refresh() {
     if (!hasContracts) return;
@@ -584,6 +595,19 @@ function Play({
         <article className="settlementCard">
           <span>Settled onchain</span>
           <strong>{settlementText}</strong>
+          {roundResults.length ? (
+            <div className="revealStage">
+              <div className="miniGoal">
+                <div className={`miniKeeper keeper-${roundResults[Math.max(animatedRound - 1, 0)]?.botGoal ? "wrong" : "save"}`}>GK</div>
+                <div className={`miniBall ball-${roundResults[Math.max(animatedRound - 1, 0)]?.youGoal ? "goal" : "save"}`} />
+              </div>
+              <div>
+                <span>Live reveal</span>
+                <strong>Round {animatedRound || 1} of 5</strong>
+                <p>{roundResults[Math.max(animatedRound - 1, 0)]?.youGoal ? "Your shot beats the keeper." : "Keeper reads your shot."}</p>
+              </div>
+            </div>
+          ) : null}
           {roundResults.length ? (
             <div className="roundStrip">
               {roundResults.map((round) => (

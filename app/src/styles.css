@@ -413,6 +413,93 @@ h2 {
   font-weight: 900;
 }
 
+.revealStage {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(68, 244, 196, 0.16);
+  border-radius: 18px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    rgba(0, 0, 0, 0.2);
+  background-size: 28px 28px, 28px 28px, cover;
+}
+
+.revealStage p {
+  margin: 6px 0 0;
+  color: rgba(248, 243, 231, 0.62);
+}
+
+.miniGoal {
+  position: relative;
+  height: 130px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(18, 111, 76, 0.85), rgba(5, 10, 15, 0.9));
+}
+
+.miniGoal::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  width: 112px;
+  height: 42px;
+  border: 3px solid rgba(248, 243, 231, 0.72);
+  border-bottom: 0;
+  transform: translateX(-50%);
+}
+
+.miniKeeper,
+.miniBall {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+
+.miniKeeper {
+  left: 88px;
+  top: 48px;
+  width: 44px;
+  height: 34px;
+  border-radius: 10px;
+  color: #061009;
+  background: #f8ff70;
+  font-size: 12px;
+  font-weight: 900;
+  transition: transform 500ms ease;
+}
+
+.miniKeeper.keeper-save {
+  transform: translateX(30px) rotate(12deg);
+}
+
+.miniKeeper.keeper-wrong {
+  transform: translateX(-36px) rotate(-18deg);
+}
+
+.miniBall {
+  left: 98px;
+  bottom: 18px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #f8f3e7;
+  box-shadow: 0 0 28px rgba(248, 255, 112, 0.9);
+  transition: transform 600ms ease;
+}
+
+.miniBall.ball-goal {
+  transform: translate(42px, -76px);
+}
+
+.miniBall.ball-save {
+  transform: translate(28px, -50px);
+}
+
 .roundStrip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -574,6 +661,10 @@ h2 {
   }
 
   .roundStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .revealStage {
     grid-template-columns: 1fr;
   }
 
