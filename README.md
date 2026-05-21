@@ -6,6 +6,8 @@ This MVP is a game, not a betting market. V1 uses non-transferable DuelCredit in
 
 Live app: `https://panenka-alpha.vercel.app`
 
+Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
+
 ## What Is Built
 
 - `DuelCredit`: non-transferable in-game credit with a daily faucet and duel-only transfer route.
@@ -13,6 +15,7 @@ Live app: `https://panenka-alpha.vercel.app`
 - `PenaltyDuel`: create, join, commit, reveal, settle, timeout cancel, and forfeit.
 - Foundry tests covering the full duel lifecycle and failure cases.
 - X Layer testnet deployment and first two-wallet duel proof.
+- Server-side Panenka Bot endpoint for one-wallet testing.
 
 ## X Layer Testnet Proof
 
@@ -94,9 +97,10 @@ These events are the judge-facing proof: a duel has two players, both commits ar
 2. Mint or pick a country kicker.
 3. Claim DuelCredit from the faucet.
 4. Create a duel with a hidden commitment.
-5. Opponent joins with their own hidden commitment.
-6. Both players reveal.
-7. The UI animates each round, then shows the settlement transaction, stats update, and leaderboard change.
+5. Click `Bot joins this duel` for one-wallet testing, or ask a human opponent to join.
+6. Reveal from your wallet.
+7. Click `Bot reveals and settles`, or ask the human opponent to reveal.
+8. The UI shows the settlement transaction, stats update, and leaderboard change.
 
 ## Scope Guard
 

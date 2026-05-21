@@ -85,6 +85,12 @@ Docs/config:
 - Forfeit if one player reveals and the other does not.
 - Emits judge-facing events: `DuelCreated`, `DuelJoined`, `PlayerRevealed`, `RoundResolved`, `DuelSettled`, `DuelForfeited`, `DuelCancelled`.
 
+`Panenka Bot`
+- Server-side test opponent at `/api/bot-opponent`.
+- Lets one public tester complete a real two-player duel without controlling two wallets.
+- Bot uses its own server-side EOA, commits its own hidden choices, then reveals after the user reveals.
+- This is an onboarding helper, not a contract shortcut.
+
 ## Verification Passed
 
 Commands passed on 2026-05-20:
@@ -160,6 +166,7 @@ Readback after settlement:
 ## Next Panenka Step
 
 - Hard-test the deployed frontend action flow against the live contracts.
+- Hard-test the one-wallet bot flow against the live Vercel deployment.
 - Polish the duel screen/reveal animation.
 - Post the first X Layer testnet proof update with the duel tx or a short clip.
 - Create a GitHub repo or add a remote, then commit and push the current scaffold.

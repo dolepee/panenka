@@ -160,7 +160,7 @@ function App() {
           <a href="#play">Play</a>
           <a href="#leaderboard">Leaderboard</a>
           <a href="#me">Me</a>
-          <button onClick={connect}>{account ? short(account) : "Connect OKX Wallet"}</button>
+          <button onClick={connect}>{account ? short(account) : "Connect wallet"}</button>
         </div>
       </nav>
 
@@ -187,7 +187,7 @@ function Home() {
           Panenka turns penalty shootouts into onchain duels. Pick a country kicker, hide your five shots and saves, reveal, and let the contract settle the scoreboard.
         </p>
         <div className="ctaRow">
-          <a className="primary" href="#play">Create duel</a>
+        <a className="primary" href="#play">Play the bot</a>
           <a className="secondary" href="#leaderboard">View leaderboard</a>
         </div>
       </div>
@@ -230,6 +230,7 @@ function Play({
   const [tokenId, setTokenId] = useState<bigint>(0n);
   const [balance, setBalance] = useState<bigint>(0n);
   const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
+  const [botBusy, setBotBusy] = useState(false);
   const canWrite = Boolean(account && provider && hasContracts);
 
   useEffect(() => {
@@ -366,13 +367,43 @@ function Play({
     setStatus(`Reveal for duel #${revealDuelId} confirmed. If both wallets revealed, the duel settled onchain.`);
   }
 
+  async function callBot(action: "join" | "reveal") {
+    const duelId = Number(action === "join" ? joinDuelId || revealDuelId : revealDuelId || joinDuelId);
+    if (!duelId) {
+      setStatus("Enter a duel ID first.");
+      return;
+    }
+    setBotBusy(true);
+    setStatus(`Panenka Bot ${action === "join" ? "joining" : "revealing"} duel #${duelId}...`);
+    try {
+      const result = await fetch("/api/bot-opponent", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action, duelId }),
+      });
+      const body = await result.json();
+      if (!result.ok) throw new Error(body.error ?? "Bot request failed.");
+      setLastTx(body.hash);
+      setStatus(
+        action === "join"
+          ? `Panenka Bot joined duel #${duelId}. Reveal from your wallet next.`
+          : `Panenka Bot revealed duel #${duelId}. If you already revealed, the duel is settled.`,
+      );
+      await refresh();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Bot request failed.");
+    } finally {
+      setBotBusy(false);
+    }
+  }
+
   return (
     <section className="page">
       <p className="eyebrow">Play path</p>
-      <h2>Use two wallets: one creates, one joins.</h2>
+      <h2>One wallet can test against Panenka Bot.</h2>
       <p className="lede compact">
-        Panenka is a commit-reveal duel. Wallet A hides five shots and saves, Wallet B hides five choices, then both reveal.
-        The contract settles the score only after both hidden plans are revealed.
+        Panenka is still a two-player commit-reveal game by design. For easier testing, your wallet creates and reveals while
+        Panenka Bot acts as the opponent wallet. Real PvP with a second human wallet still works.
       </p>
 
       <div className="statusPanel">
@@ -390,10 +421,10 @@ function Play({
           <h3>What you should click</h3>
         </div>
         <ol className="guideSteps">
-          <li><strong>Wallet A:</strong> connect, mint a kicker if needed, claim DCR, approve, then create a hidden duel.</li>
-          <li><strong>Wallet B:</strong> switch accounts, mint/claim/approve, paste the duel ID, then join with a hidden plan.</li>
-          <li><strong>Reveal:</strong> reveal once from Wallet B, switch back to Wallet A, reveal the same duel ID again.</li>
-          <li><strong>Done:</strong> the second reveal settles the duel, transfers DuelCredit, and updates kicker stats.</li>
+          <li><strong>You:</strong> connect any injected EVM wallet, mint a kicker, claim DCR, approve, then create a hidden duel.</li>
+          <li><strong>Bot:</strong> click Bot joins this duel. It commits its own hidden choices from a server-side wallet.</li>
+          <li><strong>You:</strong> reveal your stored plan from the same browser and wallet that created the duel.</li>
+          <li><strong>Bot:</strong> click Bot reveals and settles. The second reveal settles credits and kicker stats onchain.</li>
         </ol>
       </article>
 
@@ -424,30 +455,35 @@ function Play({
         </article>
 
         <article className="panel">
-          <h3>3A. Wallet A creates</h3>
+          <h3>3. Create a duel</h3>
           <label>
             Stake
             <input value={stake} onChange={(event) => setStake(event.target.value)} />
           </label>
           <p className="muted">
-            Click this from the first wallet. Copy the duel ID from the status line, then switch to the opponent wallet.
-            The hidden plan stays in this browser for the later reveal.
+            Your wallet commits a hidden five-round plan. The chain sees only the hash until you reveal.
           </p>
           <button onClick={createDuel}>Create hidden duel</button>
         </article>
 
         <article className="panel">
-          <h3>3B / 4. Join, then reveal</h3>
+          <h3>4. Finish with bot or human</h3>
           <label>
-            Wallet B: duel ID to join
+            Duel ID
             <input value={joinDuelId} onChange={(event) => setJoinDuelId(event.target.value)} placeholder="17" />
           </label>
-          <button onClick={joinDuel}>Join with hidden plan</button>
+          <div className="actionRow">
+            <button onClick={() => callBot("join")} disabled={botBusy}>{botBusy ? "Bot working..." : "Bot joins this duel"}</button>
+            <button onClick={joinDuel}>Human wallet joins</button>
+          </div>
           <label>
-            Current wallet: duel ID to reveal
+            Reveal duel ID
             <input value={revealDuelId} onChange={(event) => setRevealDuelId(event.target.value)} placeholder="17" />
           </label>
-          <button onClick={revealDuel}>Reveal stored plan</button>
+          <div className="actionRow">
+            <button onClick={revealDuel}>Reveal my plan</button>
+            <button onClick={() => callBot("reveal")} disabled={botBusy}>{botBusy ? "Bot working..." : "Bot reveals and settles"}</button>
+          </div>
         </article>
       </div>
 
@@ -558,7 +594,7 @@ function Me({
             <span>{stats[3]} streak</span>
           </div>
         ) : null}
-        {!account ? <button onClick={connect}>Connect OKX Wallet</button> : null}
+        {!account ? <button onClick={connect}>Connect wallet</button> : null}
       </div>
     </section>
   );
