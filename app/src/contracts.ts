@@ -50,4 +50,5 @@ export const penaltyDuelAbi = parseAbi([
   "function createDuel(uint256 stake, uint256 kickerTokenId, bytes32 commitHash) external returns (uint256)",
   "function joinDuel(uint256 duelId, uint256 kickerTokenId, bytes32 commitHash) external",
   "function reveal(uint256 duelId, uint8[5] shots, uint8[5] saves, bytes32 salt) external",
+  "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
 ]);

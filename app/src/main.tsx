@@ -41,6 +41,17 @@ type StoredPlan = {
   saves: DirectionPlan;
   salt: `0x${string}`;
 };
+type DuelView = {
+  id: number;
+  status: number;
+  statusLabel: string;
+  stake: string;
+  p1: string;
+  p2: string;
+  p1Revealed: boolean;
+  p2Revealed: boolean;
+  nextStep: string;
+};
 
 const countries = [
   { id: 1, name: "Argentina" },
@@ -115,6 +126,25 @@ function localPlanIds(account: string) {
     .map((key) => Number(key.slice(prefix.length)))
     .filter(Number.isFinite)
     .sort((a, b) => a - b);
+}
+
+function duelStatusLabel(status: number) {
+  return ["Open", "Committed", "Settled", "Cancelled", "Forfeited"][status] ?? `Status ${status}`;
+}
+
+function duelNextStep(duel: DuelView, account: string) {
+  const lower = account.toLowerCase();
+  const isP1 = duel.p1.toLowerCase() === lower;
+  const isP2 = duel.p2.toLowerCase() === lower;
+  if (duel.status === 0) return "Waiting for an opponent. Share the invite link or click Bot joins this duel.";
+  if (duel.status === 2) return "Settled. Check your DCR balance and kicker stats.";
+  if (duel.status === 3) return "Cancelled. Create a new duel.";
+  if (duel.status === 4) return "Forfeited. The remaining player claimed the pot.";
+  if (!duel.p1Revealed && isP1) return "Your wallet created this duel. Click Reveal my plan.";
+  if (!duel.p2Revealed && isP2) return "Your wallet joined this duel. Click Reveal my plan.";
+  if (duel.p1Revealed && !duel.p2Revealed) return "Creator revealed. Waiting for opponent or Bot reveals and settles.";
+  if (!duel.p1Revealed && duel.p2Revealed) return "Opponent revealed. Creator must click Reveal my plan to settle.";
+  return "Both reveals are in. Refresh if settlement is still indexing.";
 }
 
 function App() {
@@ -239,6 +269,7 @@ function Play({
   const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
   const [botBusy, setBotBusy] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
+  const [duelView, setDuelView] = useState<DuelView | null>(null);
   const canWrite = Boolean(account && provider && hasContracts);
 
   useEffect(() => {
@@ -250,6 +281,11 @@ function Play({
     }
     void refresh();
   }, [account]);
+
+  useEffect(() => {
+    const duelId = revealDuelId || joinDuelId;
+    if (duelId) void inspectDuel(duelId, false);
+  }, [revealDuelId, joinDuelId, account]);
 
   async function refresh() {
     if (!hasContracts) return;
@@ -272,6 +308,35 @@ function Play({
     }
   }
 
+  async function inspectDuel(duelIdInput = revealDuelId || joinDuelId, updateStatus = true) {
+    if (!duelIdInput || !hasContracts) return;
+    try {
+      const duelId = Number(duelIdInput);
+      const duel = (await publicClient.readContract({
+        address: addresses.penaltyDuel!,
+        abi: penaltyDuelAbi,
+        functionName: "getDuel",
+        args: [BigInt(duelId)],
+      })) as any;
+      const view: DuelView = {
+        id: duelId,
+        status: Number(duel.status),
+        statusLabel: duelStatusLabel(Number(duel.status)),
+        stake: formatUnits(duel.stake, 18),
+        p1: duel.p1.player,
+        p2: duel.p2.player,
+        p1Revealed: Boolean(duel.p1.revealed),
+        p2Revealed: Boolean(duel.p2.revealed),
+        nextStep: "",
+      };
+      view.nextStep = duelNextStep(view, account);
+      setDuelView(view);
+      if (updateStatus) setStatus(view.nextStep);
+    } catch (error) {
+      if (updateStatus) setStatus(error instanceof Error ? error.message : "Could not read duel state.");
+    }
+  }
+
   async function write(action: () => Promise<`0x${string}`>, label: string) {
     if (!canWrite) {
       setStatus(account ? "Deploy contract addresses before writing." : "Connect wallet first.");
@@ -284,6 +349,7 @@ function Play({
     await publicClient.waitForTransactionReceipt({ hash });
     setStatus(`${label} confirmed.`);
     await refresh();
+    await inspectDuel(undefined, false);
   }
 
   function walletClient() {
@@ -411,6 +477,7 @@ function Play({
           : `Panenka Bot revealed duel #${duelId}. If you already revealed, the duel is settled.`,
       );
       await refresh();
+      await inspectDuel(String(duelId), true);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Bot request failed.");
     } finally {
@@ -451,6 +518,28 @@ function Play({
         <strong>{status}</strong>
         {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">View last tx</a> : null}
       </div>
+
+      {duelView ? (
+        <article className="duelState">
+          <div>
+            <span>Duel #{duelView.id}</span>
+            <strong>{duelView.statusLabel}</strong>
+          </div>
+          <div>
+            <span>Creator</span>
+            <strong>{short(duelView.p1)} · {duelView.p1Revealed ? "revealed" : "hidden"}</strong>
+          </div>
+          <div>
+            <span>Opponent</span>
+            <strong>{short(duelView.p2)} · {duelView.p2Revealed ? "revealed" : "hidden"}</strong>
+          </div>
+          <div className="duelStateNext">
+            <span>Next click</span>
+            <strong>{duelView.nextStep}</strong>
+          </div>
+          <button onClick={() => inspectDuel(undefined, true)}>Refresh duel state</button>
+        </article>
+      ) : null}
 
       <article className="guideCard">
         <div>

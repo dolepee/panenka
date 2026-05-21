@@ -333,6 +333,56 @@ h2 {
   color: #83ffe3;
 }
 
+.duelState {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: stretch;
+  margin: 16px 0 8px;
+  padding: 14px;
+  border: 1px solid rgba(68, 244, 196, 0.22);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(68, 244, 196, 0.12), transparent 22rem),
+    rgba(0, 0, 0, 0.24);
+}
+
+.duelState div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(248, 243, 231, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.duelState span {
+  color: rgba(248, 243, 231, 0.54);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.duelState strong {
+  color: #f8f3e7;
+  line-height: 1.35;
+}
+
+.duelState .duelStateNext {
+  border-color: rgba(248, 255, 112, 0.22);
+}
+
+.duelState button {
+  align-self: center;
+  padding: 12px;
+  border: 1px solid rgba(248, 243, 231, 0.15);
+  border-radius: 14px;
+  color: #061009;
+  background: linear-gradient(135deg, #44f4c4, #f8ff70);
+  font-weight: 900;
+}
+
 .countryGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -461,6 +511,10 @@ h2 {
 
   .statGrid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .duelState {
+    grid-template-columns: 1fr;
   }
 
   .guideCard {
