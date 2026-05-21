@@ -58,6 +58,15 @@ type RoundResult = {
   youGoal: boolean;
   botGoal: boolean;
 };
+type LeaderboardRow = {
+  tokenId: string;
+  player: string;
+  country: string;
+  wins: number;
+  losses: number;
+  streak: number;
+  level: number;
+};
 
 const countries = [
   { id: 1, name: "Argentina" },
@@ -721,26 +730,48 @@ function Play({
 }
 
 function Leaderboard() {
-  const rows = [
-    ["Nigeria", "qdee", 7, 5],
-    ["Japan", "kaito", 5, 3],
-    ["Brazil", "lucas", 4, 2],
-    ["France", "amelie", 4, 1],
-  ] as const;
+  const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [status, setStatus] = useState("Loading live X Layer leaderboard...");
+  const [latestBlock, setLatestBlock] = useState("");
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const response = await fetch("/api/leaderboard");
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Leaderboard failed.");
+        setRows(body.rows ?? []);
+        setLatestBlock(body.latestBlock ?? "");
+        setStatus(body.rows?.length ? "Ranked from KickerMinted and KickerStatsUpdated events." : "No ranked kickers found in the scan window yet.");
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "Could not load leaderboard.");
+      }
+    }
+    void load();
+  }, []);
+
   return (
     <section className="page">
       <p className="eyebrow">Onchain form table</p>
       <h2>Country kickers ranked by wins and streak.</h2>
+      <div className="statusPanel">
+        <span>Live from X Layer</span>
+        {latestBlock ? <span>latest block {latestBlock}</span> : null}
+        <strong>{status}</strong>
+      </div>
       <div className="table">
-        {rows.map(([country, handle, wins, streak], index) => (
-          <div className="rank" key={country}>
+        {rows.map((row, index) => (
+          <div className="rank" key={row.tokenId}>
             <span>#{index + 1}</span>
-            <strong>{country}</strong>
-            <span>@{handle}</span>
-            <span>{wins} wins</span>
-            <span>{streak} streak</span>
+            <strong>{row.country} #{row.tokenId}</strong>
+            <span>{short(row.player)}</span>
+            <span>{row.wins} wins</span>
+            <span>{row.losses} losses</span>
+            <span>{row.streak} streak</span>
+            <span>level {row.level}</span>
           </div>
         ))}
+        {!rows.length ? <p className="muted">Play and settle a duel, then refresh this page.</p> : null}
       </div>
     </section>
   );
