@@ -66,6 +66,15 @@ function commitment(player: `0x${string}`, plan: Plan) {
   );
 }
 
+function userError(error: unknown) {
+  const message = error instanceof Error ? error.shortMessage ?? error.message : "Bot request failed.";
+  if (message.includes("0xa89ac151")) return "Panenka Bot already revealed. The creator wallet must click Reveal my plan.";
+  if (message.includes("0xa717dfcc")) return "This wallet is not a player in that duel.";
+  if (message.includes("0xf0f96d35")) return "Reveal failed because the hidden plan does not match the original commit.";
+  if (message.includes("0xf525e320")) return "That duel is not in the right state for this bot action.";
+  return message;
+}
+
 export default async function handler(request: any, response: any) {
   try {
     if (request.method !== "POST") {
@@ -170,7 +179,6 @@ export default async function handler(request: any, response: any) {
     );
     response.status(200).json({ action, duelId: duelId.toString(), bot: bot.address, hash, setupTxs });
   } catch (error) {
-    const message = error instanceof Error ? error.shortMessage ?? error.message : "Bot request failed.";
-    response.status(500).json({ error: message });
+    response.status(500).json({ error: userError(error) });
   }
 }
