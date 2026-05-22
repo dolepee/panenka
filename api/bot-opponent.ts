@@ -67,82 +67,96 @@ function commitment(player: `0x${string}`, plan: Plan) {
 }
 
 export default async function handler(request: any, response: any) {
-  if (request.method !== "POST") {
-    response.status(405).json({ error: "POST only" });
-    return;
-  }
-  if (!BOT_PRIVATE_KEY) {
-    response.status(500).json({ error: "BOT_PRIVATE_KEY is not configured" });
-    return;
-  }
-
-  const action = request.body?.action;
-  const duelId = BigInt(request.body?.duelId ?? 0);
-  if ((action !== "join" && action !== "reveal") || duelId <= 0n) {
-    response.status(400).json({ error: "Expected { action: 'join' | 'reveal', duelId }" });
-    return;
-  }
-
-  const bot = privateKeyToAccount(BOT_PRIVATE_KEY);
-  const publicClient = createPublicClient({ chain, transport: http(XLAYER_RPC_URL) });
-  const walletClient = createWalletClient({ account: bot, chain, transport: http(XLAYER_RPC_URL) });
-
-  async function wait(hash: `0x${string}`) {
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    if (receipt.status !== "success") throw new Error(`Transaction reverted: ${hash}`);
-    return hash;
-  }
-
-  async function tryWrite(write: () => Promise<`0x${string}`>) {
-    try {
-      return await wait(await write());
-    } catch {
-      return null;
+  try {
+    if (request.method !== "POST") {
+      response.status(405).json({ error: "POST only" });
+      return;
     }
-  }
+    if (!BOT_PRIVATE_KEY) {
+      response.status(500).json({ error: "BOT_PRIVATE_KEY is not configured" });
+      return;
+    }
 
-  const setupTxs: `0x${string}`[] = [];
-  if (action === "join") {
-    const faucetTx = await tryWrite(() =>
-      walletClient.writeContract({ address: DUEL_CREDIT, abi: creditAbi, functionName: "claimFaucet" }),
-    );
-    if (faucetTx) setupTxs.push(faucetTx);
+    const action = request.body?.action;
+    const duelId = BigInt(request.body?.duelId ?? 0);
+    if ((action !== "join" && action !== "reveal") || duelId <= 0n) {
+      response.status(400).json({ error: "Expected { action: 'join' | 'reveal', duelId }" });
+      return;
+    }
 
-    let tokenId = (await publicClient.readContract({
-      address: KICKER_NFT,
-      abi: kickerAbi,
-      functionName: "tokenOfOwner",
-      args: [bot.address],
-    })) as bigint;
-    if (tokenId === 0n) {
-      const mintTx = await wait(
-        await walletClient.writeContract({ address: KICKER_NFT, abi: kickerAbi, functionName: "mint", args: [5] }),
+    const bot = privateKeyToAccount(BOT_PRIVATE_KEY);
+    const publicClient = createPublicClient({ chain, transport: http(XLAYER_RPC_URL) });
+    const walletClient = createWalletClient({ account: bot, chain, transport: http(XLAYER_RPC_URL) });
+
+    async function wait(hash: `0x${string}`) {
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") throw new Error(`Transaction reverted: ${hash}`);
+      return hash;
+    }
+
+    async function tryWrite(write: () => Promise<`0x${string}`>) {
+      try {
+        return await wait(await write());
+      } catch {
+        return null;
+      }
+    }
+
+    const setupTxs: `0x${string}`[] = [];
+    if (action === "join") {
+      const faucetTx = await tryWrite(() =>
+        walletClient.writeContract({ address: DUEL_CREDIT, abi: creditAbi, functionName: "claimFaucet" }),
       );
-      setupTxs.push(mintTx);
-      tokenId = (await publicClient.readContract({
+      if (faucetTx) setupTxs.push(faucetTx);
+
+      let tokenId = (await publicClient.readContract({
         address: KICKER_NFT,
         abi: kickerAbi,
         functionName: "tokenOfOwner",
         args: [bot.address],
       })) as bigint;
-    }
+      if (tokenId === 0n) {
+        const mintTx = await wait(
+          await walletClient.writeContract({ address: KICKER_NFT, abi: kickerAbi, functionName: "mint", args: [5] }),
+        );
+        setupTxs.push(mintTx);
+        tokenId = (await publicClient.readContract({
+          address: KICKER_NFT,
+          abi: kickerAbi,
+          functionName: "tokenOfOwner",
+          args: [bot.address],
+        })) as bigint;
+      }
 
-    const allowance = (await publicClient.readContract({
-      address: DUEL_CREDIT,
-      abi: creditAbi,
-      functionName: "allowance",
-      args: [bot.address, PENALTY_DUEL],
-    })) as bigint;
-    if (allowance === 0n) {
-      const approveTx = await wait(
+      const allowance = (await publicClient.readContract({
+        address: DUEL_CREDIT,
+        abi: creditAbi,
+        functionName: "allowance",
+        args: [bot.address, PENALTY_DUEL],
+      })) as bigint;
+      if (allowance === 0n) {
+        const approveTx = await wait(
+          await walletClient.writeContract({
+            address: DUEL_CREDIT,
+            abi: creditAbi,
+            functionName: "approve",
+            args: [PENALTY_DUEL, maxUint256],
+          }),
+        );
+        setupTxs.push(approveTx);
+      }
+
+      const plan = botPlan(duelId);
+      const hash = await wait(
         await walletClient.writeContract({
-          address: DUEL_CREDIT,
-          abi: creditAbi,
-          functionName: "approve",
-          args: [PENALTY_DUEL, maxUint256],
+          address: PENALTY_DUEL,
+          abi: duelAbi,
+          functionName: "joinDuel",
+          args: [duelId, tokenId, commitment(bot.address, plan)],
         }),
       );
-      setupTxs.push(approveTx);
+      response.status(200).json({ action, duelId: duelId.toString(), bot: bot.address, hash, setupTxs });
+      return;
     }
 
     const plan = botPlan(duelId);
@@ -150,22 +164,13 @@ export default async function handler(request: any, response: any) {
       await walletClient.writeContract({
         address: PENALTY_DUEL,
         abi: duelAbi,
-        functionName: "joinDuel",
-        args: [duelId, tokenId, commitment(bot.address, plan)],
+        functionName: "reveal",
+        args: [duelId, plan.shots, plan.saves, plan.salt],
       }),
     );
     response.status(200).json({ action, duelId: duelId.toString(), bot: bot.address, hash, setupTxs });
-    return;
+  } catch (error) {
+    const message = error instanceof Error ? error.shortMessage ?? error.message : "Bot request failed.";
+    response.status(500).json({ error: message });
   }
-
-  const plan = botPlan(duelId);
-  const hash = await wait(
-    await walletClient.writeContract({
-      address: PENALTY_DUEL,
-      abi: duelAbi,
-      functionName: "reveal",
-      args: [duelId, plan.shots, plan.saves, plan.salt],
-    }),
-  );
-  response.status(200).json({ action, duelId: duelId.toString(), bot: bot.address, hash, setupTxs });
 }

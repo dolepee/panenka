@@ -525,6 +525,10 @@ function Play({
       setStatus("Enter a duel ID first.");
       return;
     }
+    if (action === "reveal" && duelView?.id === duelId && duelView.p2Revealed && !duelView.p1Revealed) {
+      setStatus("Panenka Bot already revealed. Click Reveal my plan from the creator wallet to settle.");
+      return;
+    }
     setBotBusy(true);
     setStatus(`Panenka Bot ${action === "join" ? "joining" : "revealing"} duel #${duelId}...`);
     try {
@@ -533,7 +537,8 @@ function Play({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action, duelId }),
       });
-      const body = await result.json();
+      const contentType = result.headers.get("content-type") ?? "";
+      const body = contentType.includes("application/json") ? await result.json() : { error: await result.text() };
       if (!result.ok) throw new Error(body.error ?? "Bot request failed.");
       setLastTx(body.hash);
       const receipt = await publicClient.getTransactionReceipt({ hash: body.hash });
