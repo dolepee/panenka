@@ -314,7 +314,13 @@ function Play({
   const [settlementText, setSettlementText] = useState("");
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
   const [animatedRound, setAnimatedRound] = useState(0);
+  const [actionNotice, setActionNotice] = useState("Create a duel, let the bot join, then reveal from this same browser.");
   const canWrite = Boolean(account && provider && hasContracts);
+
+  function notify(message: string) {
+    setStatus(message);
+    setActionNotice(message);
+  }
 
   useEffect(() => {
     const invitedDuelId = new URLSearchParams(location.search).get("duel");
@@ -358,7 +364,7 @@ function Play({
       setBalance(reads[2] as bigint);
       setStoredPlanIds(account ? localPlanIds(account) : []);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Read failed.");
+      notify(error instanceof Error ? error.message : "Read failed.");
     }
   }
 
@@ -385,30 +391,30 @@ function Play({
       };
       view.nextStep = duelNextStep(view, account);
       setDuelView(view);
-      if (updateStatus) setStatus(view.nextStep);
+      if (updateStatus) notify(view.nextStep);
     } catch (error) {
-      if (updateStatus) setStatus(error instanceof Error ? error.message : "Could not read duel state.");
+      if (updateStatus) notify(error instanceof Error ? error.message : "Could not read duel state.");
     }
   }
 
   async function write(action: () => Promise<`0x${string}`>, label: string) {
     if (!canWrite) {
-      setStatus(account ? "Deploy contract addresses before writing." : "Connect wallet first.");
+      notify(account ? "Deploy contract addresses before writing." : "Connect wallet first.");
       if (!account) await connect();
       return;
     }
     try {
-      setStatus(`${label}...`);
+      notify(`${label}...`);
       const hash = await action();
       setLastTx(hash);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       readSettlementFromReceipt(receipt);
-      setStatus(`${label} confirmed.`);
+      notify(`${label} confirmed.`);
       await refresh();
       await inspectDuel(undefined, false);
       return hash;
     } catch (error) {
-      setStatus(humanError(error));
+      notify(humanError(error));
       return null;
     }
   }
@@ -427,7 +433,7 @@ function Play({
 
   async function mintKicker() {
     if (tokenId > 0n) {
-      setStatus(`Kicker #${tokenId} is ready. Continue to Fuel and approve.`);
+      notify(`Kicker #${tokenId} is ready. Continue to Fuel and approve.`);
       return;
     }
     await write(
@@ -452,7 +458,7 @@ function Play({
   async function canSpendStake(amount: bigint) {
     if (!account) return false;
     if (tokenId === 0n) {
-      setStatus("Mint a country kicker before creating or joining a duel.");
+      notify("Mint a country kicker before creating or joining a duel.");
       return false;
     }
     const [freshBalance, allowance] = await Promise.all([
@@ -460,11 +466,11 @@ function Play({
       publicClient.readContract({ address: addresses.duelCredit!, abi: duelCreditAbi, functionName: "allowance", args: [account, addresses.penaltyDuel!] }),
     ]);
     if ((freshBalance as bigint) < amount) {
-      setStatus("Claim DuelCredit before creating or joining a duel.");
+      notify("Claim DuelCredit before creating or joining a duel.");
       return false;
     }
     if ((allowance as bigint) < amount) {
-      setStatus("Approve the duel contract before creating or joining a duel.");
+      notify("Approve the duel contract before creating or joining a duel.");
       return false;
     }
     return true;
@@ -474,7 +480,7 @@ function Play({
     if (!account) return;
     const stakeAmount = parseUnits(stake || "0", 18);
     if (stakeAmount <= 0n) {
-      setStatus("Stake must be greater than 0 DCR.");
+      notify("Stake must be greater than 0 DCR.");
       return;
     }
     if (!(await canSpendStake(stakeAmount))) return;
@@ -500,9 +506,9 @@ function Play({
     setInviteLink(link);
     try {
       await navigator.clipboard?.writeText(link);
-      setStatus(`Duel #${duelId} created. Invite link copied. Send it to your friend.`);
+      notify(`Duel #${duelId} created. Invite link copied. Now click Bot joins this duel.`);
     } catch {
-      setStatus(`Duel #${duelId} created. Copy the invite link and send it to your friend.`);
+      notify(`Duel #${duelId} created. Now click Bot joins this duel.`);
     }
   }
 
@@ -516,11 +522,11 @@ function Play({
       args: [BigInt(duelId)],
     })) as any;
     if (duel.p1.player === ZERO_ADDRESS) {
-      setStatus("That duel was never created. Ask your friend for a fresh invite link.");
+      notify("That duel was never created. Ask your friend for a fresh invite link.");
       return;
     }
     if (Number(duel.status) !== 0) {
-      setStatus("That duel is no longer open. Create or join a fresh duel.");
+      notify("That duel is no longer open. Create or join a fresh duel.");
       return;
     }
     if (!(await canSpendStake(duel.stake as bigint))) return;
@@ -540,40 +546,54 @@ function Play({
     savePlan(account, plan);
     setStoredPlanIds(localPlanIds(account));
     setRevealDuelId(String(duelId));
-    setStatus(`Duel #${duelId} joined. Reveal with this wallet, then switch back so the creator can reveal.`);
+    notify(`Duel #${duelId} joined. Reveal with this wallet, then switch back so the creator can reveal.`);
   }
 
   async function revealDuel() {
-    if (!account || !revealDuelId) return;
-    const duelId = Number(revealDuelId);
-    const plan = loadPlan(account, duelId);
-    if (!plan) {
-      setStatus("No local hidden plan found for this wallet. Reveal must be done from the same wallet/browser that created or joined the duel.");
+    if (!account) {
+      notify("Connect the wallet that created or joined this duel.");
       return;
     }
-    const duel = (await publicClient.readContract({
-      address: addresses.penaltyDuel!,
-      abi: penaltyDuelAbi,
-      functionName: "getDuel",
-      args: [BigInt(duelId)],
-    })) as any;
+    if (!revealDuelId) {
+      notify("Enter the duel ID you want to reveal.");
+      return;
+    }
+    const duelId = Number(revealDuelId);
+    notify(`Checking reveal for duel #${duelId}...`);
+    const plan = loadPlan(account, duelId);
+    if (!plan) {
+      notify("No local hidden plan in this browser. Create a fresh duel here, then reveal from this same browser.");
+      return;
+    }
+    let duel: any;
+    try {
+      duel = (await publicClient.readContract({
+        address: addresses.penaltyDuel!,
+        abi: penaltyDuelAbi,
+        functionName: "getDuel",
+        args: [BigInt(duelId)],
+      })) as any;
+    } catch (error) {
+      notify(humanError(error));
+      return;
+    }
     if (duel.p1.player === ZERO_ADDRESS) {
-      setStatus("That duel was never created. Create a fresh duel.");
+      notify("That duel was never created. Create a fresh duel.");
       return;
     }
     if (Number(duel.status) !== 1) {
-      setStatus("That duel is not waiting for reveal. Create a fresh duel if it already settled.");
+      notify("That duel is not waiting for reveal. Create a fresh duel if it already settled.");
       return;
     }
     const lower = account.toLowerCase();
     const isP1 = duel.p1.player.toLowerCase() === lower;
     const isP2 = duel.p2.player.toLowerCase() === lower;
     if (!isP1 && !isP2) {
-      setStatus("This wallet is not a player in that duel.");
+      notify("This wallet is not a player in that duel.");
       return;
     }
     if ((isP1 && duel.p1.revealed) || (isP2 && duel.p2.revealed)) {
-      setStatus("This wallet already revealed for that duel.");
+      notify("This wallet already revealed for that duel.");
       return;
     }
     await write(
@@ -586,7 +606,7 @@ function Play({
         }),
       `Revealing duel #${revealDuelId}`,
     );
-    setStatus(`Reveal for duel #${revealDuelId} confirmed. If both wallets revealed, the duel settled onchain.`);
+    notify(`Reveal for duel #${revealDuelId} confirmed. If both wallets revealed, the duel settled onchain.`);
   }
 
   function readSettlementFromReceipt(receipt: { logs: readonly { topics: readonly `0x${string}`[]; data: `0x${string}`; address: `0x${string}` }[] }) {
@@ -620,19 +640,19 @@ function Play({
   async function callBot(action: "join" | "reveal") {
     const duelId = Number(action === "join" ? joinDuelId || revealDuelId : revealDuelId || joinDuelId);
     if (!duelId) {
-      setStatus("Enter a duel ID first.");
+      notify("Enter a duel ID first.");
       return;
     }
     if (duelView?.id === duelId && duelView.p1.toLowerCase() === ZERO_ADDRESS) {
-      setStatus("This duel was never created. Click Create hidden duel first, then let Panenka Bot join.");
+      notify("This duel was never created. Click Create hidden duel first, then let Panenka Bot join.");
       return;
     }
     if (action === "reveal" && duelView?.id === duelId && duelView.p2Revealed && !duelView.p1Revealed) {
-      setStatus("Panenka Bot already revealed. Click Reveal my plan from the creator wallet to settle.");
+      notify("Panenka Bot already revealed. Click Reveal my plan from the creator wallet to settle.");
       return;
     }
     setBotBusy(true);
-    setStatus(`Panenka Bot ${action === "join" ? "joining" : "revealing"} duel #${duelId}...`);
+    notify(`Panenka Bot ${action === "join" ? "joining" : "revealing"} duel #${duelId}...`);
     try {
       const result = await fetch("/api/bot-opponent", {
         method: "POST",
@@ -645,7 +665,7 @@ function Play({
       setLastTx(body.hash);
       const receipt = await publicClient.getTransactionReceipt({ hash: body.hash });
       readSettlementFromReceipt(receipt);
-      setStatus(
+      notify(
         action === "join"
           ? `Panenka Bot joined duel #${duelId}. Reveal from your wallet next.`
           : `Panenka Bot revealed duel #${duelId}. If you already revealed, the duel is settled.`,
@@ -653,7 +673,7 @@ function Play({
       await refresh();
       await inspectDuel(String(duelId), true);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Bot request failed.");
+      notify(error instanceof Error ? error.message : "Bot request failed.");
     } finally {
       setBotBusy(false);
     }
@@ -662,16 +682,16 @@ function Play({
   async function copyInvite() {
     const duelId = joinDuelId || revealDuelId;
     if (!duelId) {
-      setStatus("Create a duel or enter a duel ID first.");
+      notify("Create a duel or enter a duel ID first.");
       return;
     }
     const link = playLink(duelId);
     setInviteLink(link);
     try {
       await navigator.clipboard?.writeText(link);
-      setStatus(`Invite link for duel #${duelId} copied.`);
+      notify(`Invite link for duel #${duelId} copied.`);
     } catch {
-      setStatus(`Invite link ready for duel #${duelId}.`);
+      notify(`Invite link ready for duel #${duelId}.`);
     }
   }
 
@@ -818,6 +838,7 @@ function Play({
             Reveal duel ID
             <input value={revealDuelId} onChange={(event) => setRevealDuelId(event.target.value)} placeholder="17" />
           </label>
+          <p className="actionNotice">{actionNotice}</p>
           <div className="actionRow">
             <button onClick={revealDuel}>Reveal my plan</button>
             <button onClick={() => callBot("reveal")} disabled={botBusy}>{botBusy ? "Bot working..." : "Bot reveals and settles"}</button>

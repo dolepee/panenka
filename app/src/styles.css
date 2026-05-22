@@ -583,6 +583,18 @@ h2 {
   margin-top: 18px;
 }
 
+.actionNotice {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 255, 112, 0.22);
+  border-radius: 14px;
+  color: #f8ff70;
+  background: rgba(248, 255, 112, 0.08);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .inviteBox {
   display: grid;
   gap: 10px;
