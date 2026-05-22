@@ -103,7 +103,7 @@ function explorerAddress(address: string) {
 }
 
 function planKey(account: string, duelId: number) {
-  return `panenka-plan:${account.toLowerCase()}:${duelId}`;
+  return `panenka-plan:${addresses.penaltyDuel?.toLowerCase()}:${account.toLowerCase()}:${duelId}`;
 }
 
 function makePlan(player: `0x${string}`): StoredPlan {
@@ -137,7 +137,7 @@ function savePlan(account: string, plan: StoredPlan) {
 
 function localPlanIds(account: string) {
   if (!account) return [];
-  const prefix = `panenka-plan:${account.toLowerCase()}:`;
+  const prefix = `panenka-plan:${addresses.penaltyDuel?.toLowerCase()}:${account.toLowerCase()}:`;
   return Object.keys(localStorage)
     .filter((key) => key.startsWith(prefix))
     .map((key) => Number(key.slice(prefix.length)))
@@ -163,6 +163,22 @@ function duelNextStep(duel: DuelView, account: string) {
   if (duel.p1Revealed && !duel.p2Revealed) return "Creator revealed. Waiting for opponent or Bot reveals and settles.";
   if (!duel.p1Revealed && duel.p2Revealed) return "Opponent revealed. Creator must click Reveal my plan to settle.";
   return "Both reveals are in. Refresh if settlement is still indexing.";
+}
+
+function humanError(error: unknown) {
+  const maybeError = error as { shortMessage?: string; message?: string };
+  const message = maybeError.shortMessage ?? maybeError.message ?? String(error);
+  if (message.includes("0xa89ac151")) return "This wallet already revealed for that duel.";
+  if (message.includes("0xa717dfcc")) return "This wallet is not a player in that duel.";
+  if (message.includes("0xf0f96d35")) return "This browser has an old hidden plan for that duel. Create a fresh duel.";
+  if (message.includes("0xf525e320")) return "That duel is not in the right state for this action.";
+  if (message.includes("0xfaeb9c51")) return "That duel was never created. Create a fresh duel first.";
+  if (message.includes("0xddefae28")) return "You already minted a kicker on this deployment.";
+  if (message.includes("0x13be252b")) return "Approve DuelCredit before creating or joining a duel.";
+  if (message.includes("0xf4d678b8")) return "You need more DuelCredit. Claim DCR before creating or joining.";
+  if (message.includes("0x4fe86840")) return "This wallet does not own that kicker.";
+  if (message.includes("User rejected") || message.includes("denied")) return "Wallet request cancelled.";
+  return message;
 }
 
 function App() {
@@ -381,14 +397,20 @@ function Play({
       if (!account) await connect();
       return;
     }
-    setStatus(`${label}...`);
-    const hash = await action();
-    setLastTx(hash);
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    readSettlementFromReceipt(receipt);
-    setStatus(`${label} confirmed.`);
-    await refresh();
-    await inspectDuel(undefined, false);
+    try {
+      setStatus(`${label}...`);
+      const hash = await action();
+      setLastTx(hash);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      readSettlementFromReceipt(receipt);
+      setStatus(`${label} confirmed.`);
+      await refresh();
+      await inspectDuel(undefined, false);
+      return hash;
+    } catch (error) {
+      setStatus(humanError(error));
+      return null;
+    }
   }
 
   function walletClient() {
@@ -404,6 +426,10 @@ function Play({
   }
 
   async function mintKicker() {
+    if (tokenId > 0n) {
+      setStatus(`Kicker #${tokenId} is ready. Continue to Fuel and approve.`);
+      return;
+    }
     await write(
       () => walletClient().writeContract({ address: addresses.kickerNft!, abi: kickerNftAbi, functionName: "mint", args: [selectedCountry.id] }),
       `Minting ${selectedCountry.name}`,
@@ -423,21 +449,49 @@ function Play({
     );
   }
 
+  async function canSpendStake(amount: bigint) {
+    if (!account) return false;
+    if (tokenId === 0n) {
+      setStatus("Mint a country kicker before creating or joining a duel.");
+      return false;
+    }
+    const [freshBalance, allowance] = await Promise.all([
+      publicClient.readContract({ address: addresses.duelCredit!, abi: duelCreditAbi, functionName: "balanceOf", args: [account] }),
+      publicClient.readContract({ address: addresses.duelCredit!, abi: duelCreditAbi, functionName: "allowance", args: [account, addresses.penaltyDuel!] }),
+    ]);
+    if ((freshBalance as bigint) < amount) {
+      setStatus("Claim DuelCredit before creating or joining a duel.");
+      return false;
+    }
+    if ((allowance as bigint) < amount) {
+      setStatus("Approve the duel contract before creating or joining a duel.");
+      return false;
+    }
+    return true;
+  }
+
   async function createDuel() {
     if (!account) return;
+    const stakeAmount = parseUnits(stake || "0", 18);
+    if (stakeAmount <= 0n) {
+      setStatus("Stake must be greater than 0 DCR.");
+      return;
+    }
+    if (!(await canSpendStake(stakeAmount))) return;
     const duelId = Number(await publicClient.readContract({ address: addresses.penaltyDuel!, abi: penaltyDuelAbi, functionName: "nextDuelId" }));
     const plan = { ...makePlan(account), duelId };
     const hash = commitment(account, plan.shots, plan.saves, plan.salt);
-    await write(
+    const tx = await write(
       () =>
         walletClient().writeContract({
           address: addresses.penaltyDuel!,
           abi: penaltyDuelAbi,
           functionName: "createDuel",
-          args: [parseUnits(stake, 18), tokenId, hash],
+          args: [stakeAmount, tokenId, hash],
         }),
       `Creating duel #${duelId}`,
     );
+    if (!tx) return;
     savePlan(account, plan);
     setStoredPlanIds(localPlanIds(account));
     setRevealDuelId(String(duelId));
@@ -455,18 +509,34 @@ function Play({
   async function joinDuel() {
     if (!account || !joinDuelId) return;
     const duelId = Number(joinDuelId);
+    const duel = (await publicClient.readContract({
+      address: addresses.penaltyDuel!,
+      abi: penaltyDuelAbi,
+      functionName: "getDuel",
+      args: [BigInt(duelId)],
+    })) as any;
+    if (duel.p1.player === ZERO_ADDRESS) {
+      setStatus("That duel was never created. Ask your friend for a fresh invite link.");
+      return;
+    }
+    if (Number(duel.status) !== 0) {
+      setStatus("That duel is no longer open. Create or join a fresh duel.");
+      return;
+    }
+    if (!(await canSpendStake(duel.stake as bigint))) return;
     const plan = { ...makePlan(account), duelId };
     const hash = commitment(account, plan.shots, plan.saves, plan.salt);
-    await write(
+    const tx = await write(
       () =>
         walletClient().writeContract({
           address: addresses.penaltyDuel!,
           abi: penaltyDuelAbi,
           functionName: "joinDuel",
           args: [BigInt(duelId), tokenId, hash],
-        }),
+      }),
       `Joining duel #${duelId}`,
     );
+    if (!tx) return;
     savePlan(account, plan);
     setStoredPlanIds(localPlanIds(account));
     setRevealDuelId(String(duelId));
@@ -475,9 +545,35 @@ function Play({
 
   async function revealDuel() {
     if (!account || !revealDuelId) return;
-    const plan = loadPlan(account, Number(revealDuelId));
+    const duelId = Number(revealDuelId);
+    const plan = loadPlan(account, duelId);
     if (!plan) {
       setStatus("No local hidden plan found for this wallet. Reveal must be done from the same wallet/browser that created or joined the duel.");
+      return;
+    }
+    const duel = (await publicClient.readContract({
+      address: addresses.penaltyDuel!,
+      abi: penaltyDuelAbi,
+      functionName: "getDuel",
+      args: [BigInt(duelId)],
+    })) as any;
+    if (duel.p1.player === ZERO_ADDRESS) {
+      setStatus("That duel was never created. Create a fresh duel.");
+      return;
+    }
+    if (Number(duel.status) !== 1) {
+      setStatus("That duel is not waiting for reveal. Create a fresh duel if it already settled.");
+      return;
+    }
+    const lower = account.toLowerCase();
+    const isP1 = duel.p1.player.toLowerCase() === lower;
+    const isP2 = duel.p2.player.toLowerCase() === lower;
+    if (!isP1 && !isP2) {
+      setStatus("This wallet is not a player in that duel.");
+      return;
+    }
+    if ((isP1 && duel.p1.revealed) || (isP2 && duel.p2.revealed)) {
+      setStatus("This wallet already revealed for that duel.");
       return;
     }
     await write(
