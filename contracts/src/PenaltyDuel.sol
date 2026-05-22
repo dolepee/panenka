@@ -65,6 +65,7 @@ contract PenaltyDuel {
     event DuelCancelled(uint256 indexed duelId, address indexed creator);
 
     error InvalidStake();
+    error InvalidDuel();
     error InvalidStatus();
     error InvalidKickerOwner();
     error CannotJoinOwnDuel();
@@ -101,6 +102,7 @@ contract PenaltyDuel {
 
     function joinDuel(uint256 duelId, uint256 kickerTokenId, bytes32 commitHash) external {
         Duel storage duel = duels[duelId];
+        if (duel.p1.player == address(0)) revert InvalidDuel();
         if (duel.status != DuelStatus.Open) revert InvalidStatus();
         if (commitHash == bytes32(0)) revert InvalidCommitment();
         if (duel.p1.player == msg.sender) revert CannotJoinOwnDuel();

@@ -15,9 +15,9 @@ import { privateKeyToAccount } from "viem/accounts";
 const XLAYER_RPC_URL = process.env.XLAYER_RPC_URL ?? "https://testrpc.xlayer.tech/terigon";
 const XLAYER_CHAIN_ID = Number(process.env.XLAYER_CHAIN_ID ?? 1952);
 const BOT_PRIVATE_KEY = process.env.BOT_PRIVATE_KEY as `0x${string}` | undefined;
-const DUEL_CREDIT = (process.env.DUEL_CREDIT_ADDRESS ?? "0x87e31cc7fe76dc7d70c70867e34fef1447e339e9") as `0x${string}`;
-const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0xb614e51deb5e4078b6bbb28ee32a70bc547e19df") as `0x${string}`;
-const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xbe9f77afd1d64e0f76572f08c4ed34a6a1ccbfd1") as `0x${string}`;
+const DUEL_CREDIT = (process.env.DUEL_CREDIT_ADDRESS ?? "0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98") as `0x${string}`;
+const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0x33dc85f938f21c8cf83556f444d16e61377a35a3") as `0x${string}`;
+const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xebd15b2baa79a84d6e509b2dae12526abe5dacdb") as `0x${string}`;
 
 const chain = defineChain({
   id: XLAYER_CHAIN_ID,
@@ -38,6 +38,7 @@ const kickerAbi = parseAbi([
 ]);
 
 const duelAbi = parseAbi([
+  "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
   "function joinDuel(uint256 duelId, uint256 kickerTokenId, bytes32 commitHash) external",
   "function reveal(uint256 duelId, uint8[5] shots, uint8[5] saves, bytes32 salt) external",
 ]);
@@ -72,6 +73,7 @@ function userError(error: unknown) {
   if (message.includes("0xa717dfcc")) return "This wallet is not a player in that duel.";
   if (message.includes("0xf0f96d35")) return "Reveal failed because the hidden plan does not match the original commit.";
   if (message.includes("0xf525e320")) return "That duel is not in the right state for this bot action.";
+  if (message.includes("0xfaeb9c51")) return "Create the duel first, then let Panenka Bot join it.";
   return message;
 }
 
@@ -113,6 +115,21 @@ export default async function handler(request: any, response: any) {
 
     const setupTxs: `0x${string}`[] = [];
     if (action === "join") {
+      const duel = (await publicClient.readContract({
+        address: PENALTY_DUEL,
+        abi: duelAbi,
+        functionName: "getDuel",
+        args: [duelId],
+      })) as any;
+      if (duel.p1.player === "0x0000000000000000000000000000000000000000") {
+        response.status(400).json({ error: "Create the duel first, then let Panenka Bot join it." });
+        return;
+      }
+      if (Number(duel.status) !== 0) {
+        response.status(400).json({ error: "Panenka Bot can only join an open duel." });
+        return;
+      }
+
       const faucetTx = await tryWrite(() =>
         walletClient.writeContract({ address: DUEL_CREDIT, abi: creditAbi, functionName: "claimFaucet" }),
       );

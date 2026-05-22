@@ -79,6 +79,7 @@ const countries = [
   { id: 8, name: "USA" },
 ];
 const countryById = Object.fromEntries(countries.map((country) => [country.id, country.name]));
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const publicClient = createPublicClient({ chain: xLayer, transport: http() });
 
@@ -149,6 +150,7 @@ function duelStatusLabel(status: number) {
 }
 
 function duelNextStep(duel: DuelView, account: string) {
+  if (duel.p1.toLowerCase() === ZERO_ADDRESS) return "This duel was never created. Click Create hidden duel first.";
   const lower = account.toLowerCase();
   const isP1 = duel.p1.toLowerCase() === lower;
   const isP2 = duel.p2.toLowerCase() === lower;
@@ -265,7 +267,7 @@ function Home() {
           <strong>4</strong>
           <span>Japan Bot</span>
         </div>
-        <div className="heroTx">latest proof · bot won duel #5 · leaderboard updated</div>
+        <div className="heroTx">latest proof · fixed duel #1 settled · leaderboard updated</div>
       </div>
     </section>
   );
@@ -357,7 +359,7 @@ function Play({
       const view: DuelView = {
         id: duelId,
         status: Number(duel.status),
-        statusLabel: duelStatusLabel(Number(duel.status)),
+        statusLabel: duel.p1.player === ZERO_ADDRESS ? "Not created" : duelStatusLabel(Number(duel.status)),
         stake: formatUnits(duel.stake, 18),
         p1: duel.p1.player,
         p2: duel.p2.player,
@@ -523,6 +525,10 @@ function Play({
     const duelId = Number(action === "join" ? joinDuelId || revealDuelId : revealDuelId || joinDuelId);
     if (!duelId) {
       setStatus("Enter a duel ID first.");
+      return;
+    }
+    if (duelView?.id === duelId && duelView.p1.toLowerCase() === ZERO_ADDRESS) {
+      setStatus("This duel was never created. Click Create hidden duel first, then let Panenka Bot join.");
       return;
     }
     if (action === "reveal" && duelView?.id === duelId && duelView.p2Revealed && !duelView.p1Revealed) {
@@ -707,7 +713,9 @@ function Play({
             <input value={joinDuelId} onChange={(event) => setJoinDuelId(event.target.value)} placeholder="17" />
           </label>
           <div className="actionRow">
-            <button onClick={() => callBot("join")} disabled={botBusy}>{botBusy ? "Bot working..." : "Bot joins this duel"}</button>
+            <button onClick={() => callBot("join")} disabled={botBusy || (duelView?.id === Number(joinDuelId) && duelView.p1.toLowerCase() === ZERO_ADDRESS)}>
+              {botBusy ? "Bot working..." : "Bot joins this duel"}
+            </button>
             <button onClick={joinDuel}>Human wallet joins</button>
           </div>
           <label>
@@ -732,8 +740,8 @@ function Play({
         </div>
         <div className="row">
           <span>Settlement tx</span>
-          <a href={txLink("0x753d66f00fff9d28969de5c2f194c480b53c498168b1bba02084ecc66dbe9f98")} target="_blank" rel="noreferrer">
-            0x753d...9f98
+          <a href={txLink("0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b")} target="_blank" rel="noreferrer">
+            0x8ac7...ad9b
           </a>
         </div>
       </article>

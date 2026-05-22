@@ -18,9 +18,9 @@ export const xLayer = defineChain({
 const testnetAddresses =
   XLAYER_CHAIN_ID === 1952
     ? {
-        duelCredit: "0x87e31cc7fe76dc7d70c70867e34fef1447e339e9" as const,
-        kickerNft: "0xb614e51deb5e4078b6bbb28ee32a70bc547e19df" as const,
-        penaltyDuel: "0xbe9f77afd1d64e0f76572f08c4ed34a6a1ccbfd1" as const,
+        duelCredit: "0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98" as const,
+        kickerNft: "0x33dc85f938f21c8cf83556f444d16e61377a35a3" as const,
+        penaltyDuel: "0xebd15b2baa79a84d6e509b2dae12526abe5dacdb" as const,
       }
     : {};
 

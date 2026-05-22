@@ -23,17 +23,17 @@ Chain: X Layer testnet (`1952`)
 
 Contracts:
 
-- `DuelCredit`: `0x87e31cc7fe76dc7d70c70867e34fef1447e339e9`
-- `KickerNFT`: `0xb614e51deb5e4078b6bbb28ee32a70bc547e19df`
-- `PenaltyDuel`: `0xbe9f77afd1d64e0f76572f08c4ed34a6a1ccbfd1`
+- `DuelCredit`: `0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98`
+- `KickerNFT`: `0x33dc85f938f21c8cf83556f444d16e61377a35a3`
+- `PenaltyDuel`: `0xebd15b2baa79a84d6e509b2dae12526abe5dacdb`
 
 First settled duel proof:
 
 - Duel: `#1`
-- Create duel tx: `0xf390d54ea3dfbe6125cbb5a8ebd8baeaced36aa90531a3104be1870b3619e7ab`
-- Join duel tx: `0xd39e643657d85874b01d1e1b0dd6e87440dab2176a6b0ead4391f45670487333`
-- Player one reveal / settle tx: `0xf4747aab0b5130bb1bf9a035e60a3248af9f2d37c3c15a98b7f6838dec87bf25`
-- Player two reveal / settle tx: `0x753d66f00fff9d28969de5c2f194c480b53c498168b1bba02084ecc66dbe9f98`
+- Create duel tx: `0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3`
+- Join duel tx: `0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6`
+- Player one reveal / settle tx: `0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51`
+- Player two reveal / settle tx: `0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b`
 
 Readback after settlement:
 

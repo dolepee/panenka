@@ -114,6 +114,12 @@ contract PanenkaFlowTest {
         duel.reveal(duelId, shots, saves, salt);
     }
 
+    function testCannotJoinUncreatedDuel() public {
+        vm.prank(bob);
+        vm.expectRevert(PenaltyDuel.InvalidDuel.selector);
+        duel.joinDuel(99, bobKicker, keccak256("bob commitment"));
+    }
+
     function testDrawRefundsBothPlayers() public {
         uint8[5] memory shots = [uint8(0), 1, 2, 0, 1];
         uint8[5] memory saves = [uint8(0), 1, 2, 0, 1];
