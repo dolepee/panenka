@@ -91,6 +91,13 @@ type ProofActivity = {
   proofDuel?: {
     transactions?: { playerTwoRevealAndSettle?: { explorer: string } };
   };
+  recentDuels?: Array<{
+    duelId: string;
+    statusLabel: string;
+    p1Country?: string | null;
+    p2Country?: string | null;
+    score?: string | null;
+  }>;
 };
 
 const countries = [
@@ -302,8 +309,14 @@ function Home() {
   }, []);
 
   const activity = proof?.onchainActivity;
+  const latestSettledDuel = proof?.recentDuels?.find((duel) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country);
   const proofTx = proof?.proofDuel?.transactions?.playerTwoRevealAndSettle?.explorer;
   const duelContract = proof?.contracts?.PenaltyDuel;
+  const heroDuelId = latestSettledDuel?.duelId ?? "1";
+  const heroSideOne = latestSettledDuel?.p1Country ?? "Nigeria";
+  const heroSideTwo = latestSettledDuel?.p2Country ?? "France";
+  const heroScore = latestSettledDuel?.score ?? "3-0";
+  const [heroSideOneScore, heroSideTwoScore] = heroScore.split("-");
 
   return (
     <section className="hero">
@@ -342,20 +355,25 @@ function Home() {
       </div>
       <div className="duelCard">
         <div className="duelTop">
-          <span>Duel #1 settled</span>
-          <span>X Layer proof</span>
+          <span>Duel #{heroDuelId} settled</span>
+          <span>Live X Layer state</span>
         </div>
         <div className="pitch">
           <div className="goal" />
           <div className="ball" />
           <div className="keeper">GK</div>
+          <div className="pitchScore">
+            <span>{heroSideOne}</span>
+            <strong>{heroScore}</strong>
+            <span>{heroSideTwo}</span>
+          </div>
         </div>
         <div className="score">
-          <span>Nigeria 3</span>
-          <strong>0</strong>
-          <span>France</span>
+          <span>{heroSideOne} {heroSideOneScore ?? "-"}</span>
+          <strong>{heroSideTwoScore ?? "-"}</strong>
+          <span>{heroSideTwo}</span>
         </div>
-        <div className="heroTx">proof duel #1 · credits 95 to 105 · NFT stats updated</div>
+        <div className="heroTx">latest settled duel · {activity?.settledDuels ?? 20} total settlements · NFT stats updated</div>
       </div>
     </section>
   );

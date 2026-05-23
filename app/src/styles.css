@@ -340,6 +340,42 @@ h2 {
   transform: rotate(-18deg);
 }
 
+.pitchScore {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  left: 22px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+  border: 1px solid rgba(248, 255, 112, 0.18);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(10px);
+}
+
+.pitchScore span {
+  overflow: hidden;
+  color: rgba(248, 243, 231, 0.76);
+  font-size: 18px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pitchScore span:last-child {
+  text-align: right;
+}
+
+.pitchScore strong {
+  color: #44f4c4;
+  font-size: 34px;
+  line-height: 0.9;
+  letter-spacing: -0.08em;
+}
+
 .score {
   font-size: 24px;
 }
