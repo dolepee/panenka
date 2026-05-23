@@ -27,5 +27,17 @@
       "playerTwoLosses": "1",
       "score": "3-0"
     }
+  },
+  "latestProof": {
+    "duelId": "22",
+    "matchup": "Argentina 5-0 Brazil",
+    "playerOne": "0x50200E1ba23F6a4E58e09179E4e84DA8e796CbA8",
+    "playerTwo": "0xC40f5523B1D4209C587156D19432601b371A64aA",
+    "settlement": "0x7a08f732edf8681145a2ded33b19da83c7e5dedabc98fdf6493a38f6055622cb",
+    "readback": {
+      "playerOneCountry": "Argentina",
+      "playerTwoCountry": "Brazil",
+      "score": "5-0"
+    }
   }
 }

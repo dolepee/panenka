@@ -52,6 +52,8 @@ npm run app:build
 npm run verify:duel
 ```
 
+`npm run verify:duel` checks both the original full proof duel and the latest pinned settlement proof shown in the live replay.
+
 Expected verifier marker:
 
 ```text

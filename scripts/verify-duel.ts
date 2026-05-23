@@ -20,6 +20,14 @@ type Deployment = {
     transactions: Record<string, `0x${string}`>;
     readback: Record<string, string>;
   };
+  latestProof?: {
+    duelId: string;
+    matchup: string;
+    playerOne: `0x${string}`;
+    playerTwo: `0x${string}`;
+    settlement: `0x${string}`;
+    readback: Record<string, string>;
+  };
 };
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -40,6 +48,22 @@ function assertOk(condition: unknown, message: string) {
 
 function field(value: any, key: string, index: number) {
   return value?.[key] ?? value?.[index];
+}
+
+function scoreDuel(duelState: any) {
+  const p1 = field(duelState, "p1", 5);
+  const p2 = field(duelState, "p2", 6);
+  const p1Shots = field(p1, "shots", 4) ?? [];
+  const p1Saves = field(p1, "saves", 5) ?? [];
+  const p2Shots = field(p2, "shots", 4) ?? [];
+  const p2Saves = field(p2, "saves", 5) ?? [];
+  let p1Score = 0;
+  let p2Score = 0;
+  for (let index = 0; index < 5; index++) {
+    if (Number(p1Shots[index]) !== Number(p2Saves[index])) p1Score += 1;
+    if (Number(p2Shots[index]) !== Number(p1Saves[index])) p2Score += 1;
+  }
+  return `${p1Score}-${p2Score}`;
 }
 
 async function main() {
@@ -76,21 +100,59 @@ async function main() {
   assertOk(String(kickerDuelContract).toLowerCase() === contracts.penaltyDuel.toLowerCase(), "KickerNFT route mismatch");
   assertOk(BigInt(nextDuelId as bigint) > BigInt(proof.duelId), "proof duel is not below nextDuelId");
 
-  const duelState = await client.readContract({
-    address: contracts.penaltyDuel,
-    abi: duel.abi,
-    functionName: "getDuel",
-    args: [BigInt(proof.duelId)],
+  async function verifySettledDuel({
+    label,
+    duelId,
+    playerOne,
+    playerTwo,
+    settlement,
+    expectedScore,
+  }: {
+    label: string;
+    duelId: string;
+    playerOne: `0x${string}`;
+    playerTwo: `0x${string}`;
+    settlement: `0x${string}`;
+    expectedScore?: string;
+  }) {
+    const duelState = await client.readContract({
+      address: contracts.penaltyDuel,
+      abi: duel.abi,
+      functionName: "getDuel",
+      args: [BigInt(duelId)],
+    });
+    const status = Number(field(duelState, "status", 4));
+    const p1 = field(duelState, "p1", 5);
+    const p2 = field(duelState, "p2", 6);
+    assertOk(status === 2, `${label} duel #${duelId} is not settled`);
+    assertOk(String(field(p1, "player", 0)).toLowerCase() === playerOne.toLowerCase(), `${label} player one mismatch`);
+    assertOk(String(field(p2, "player", 0)).toLowerCase() === playerTwo.toLowerCase(), `${label} player two mismatch`);
+    assertOk(String(field(p1, "player", 0)).toLowerCase() !== ZERO_ADDRESS, `${label} player one is zero`);
+    assertOk(String(field(p2, "player", 0)).toLowerCase() !== ZERO_ADDRESS, `${label} player two is zero`);
+    assertOk(Boolean(field(p1, "revealed", 3)) && Boolean(field(p2, "revealed", 3)), `${label} both players did not reveal`);
+
+    const receipt = await client.getTransactionReceipt({ hash: settlement });
+    assertOk(receipt.status === "success", `${label} settlement tx failed: ${settlement}`);
+    assertOk(
+      receipt.logs.some(
+        (log) => log.address.toLowerCase() === contracts.penaltyDuel.toLowerCase() && log.topics[0]?.toLowerCase() === settledTopic,
+      ),
+      `${label} settlement tx does not emit DuelSettled`,
+    );
+
+    const score = scoreDuel(duelState);
+    if (expectedScore) assertOk(score === expectedScore, `${label} score mismatch: expected ${expectedScore}, got ${score}`);
+    return { duelState, p1, p2, score };
+  }
+
+  const { p1, p2 } = await verifySettledDuel({
+    label: "baseline",
+    duelId: proof.duelId,
+    playerOne: proof.playerOne,
+    playerTwo: proof.playerTwo,
+    settlement: proof.transactions.playerTwoRevealAndSettle,
+    expectedScore: proof.readback.score,
   });
-  const status = Number(field(duelState, "status", 4));
-  const p1 = field(duelState, "p1", 5);
-  const p2 = field(duelState, "p2", 6);
-  assertOk(status === 2, `duel #${proof.duelId} is not settled`);
-  assertOk(String(field(p1, "player", 0)).toLowerCase() === proof.playerOne.toLowerCase(), "player one mismatch");
-  assertOk(String(field(p2, "player", 0)).toLowerCase() === proof.playerTwo.toLowerCase(), "player two mismatch");
-  assertOk(String(field(p1, "player", 0)).toLowerCase() !== ZERO_ADDRESS, "player one is zero");
-  assertOk(String(field(p2, "player", 0)).toLowerCase() !== ZERO_ADDRESS, "player two is zero");
-  assertOk(Boolean(field(p1, "revealed", 3)) && Boolean(field(p2, "revealed", 3)), "both players did not reveal");
 
   const receipts = await Promise.all(
     Object.entries(proof.transactions).map(async ([label, hash]) => {
@@ -120,13 +182,28 @@ async function main() {
   assertOk(p1Wins >= Number(proof.readback.playerOneWins), "player one win stat is below proof baseline");
   assertOk(p2Losses >= Number(proof.readback.playerTwoLosses), "player two loss stat is below proof baseline");
 
+  const latest = deployed.latestProof
+    ? await verifySettledDuel({
+        label: "latest",
+        duelId: deployed.latestProof.duelId,
+        playerOne: deployed.latestProof.playerOne,
+        playerTwo: deployed.latestProof.playerTwo,
+        settlement: deployed.latestProof.settlement,
+        expectedScore: deployed.latestProof.readback.score,
+      })
+    : null;
+
   console.log("PANENKA_DUEL_VALID");
   console.log(`chain: ${chainId}`);
   console.log(`PenaltyDuel: ${contracts.penaltyDuel}`);
-  console.log(`duel: #${proof.duelId}, status: Settled, score: ${proof.readback.score}`);
-  console.log(`settlement: ${proof.transactions.playerTwoRevealAndSettle}`);
+  console.log(`baseline duel: #${proof.duelId}, status: Settled, score: ${proof.readback.score}`);
+  console.log(`baseline settlement: ${proof.transactions.playerTwoRevealAndSettle}`);
   console.log(`proof baseline: ${proof.readback.playerOneBalance} DCR / ${proof.readback.playerTwoBalance} DCR`);
   console.log(`current balances: ${formatUnits(p1Balance as bigint, 18)} DCR / ${formatUnits(p2Balance as bigint, 18)} DCR`);
+  if (deployed.latestProof && latest) {
+    console.log(`latest duel: #${deployed.latestProof.duelId}, ${deployed.latestProof.matchup}, score: ${latest.score}`);
+    console.log(`latest settlement: ${deployed.latestProof.settlement}`);
+  }
 }
 
 main().catch((error) => {

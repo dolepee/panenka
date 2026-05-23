@@ -57,6 +57,8 @@ Verifier:
 npm run verify:duel
 ```
 
+The verifier checks the original full proof duel and the latest pinned settlement proof shown in the live replay.
+
 Expected success marker:
 
 ```text
