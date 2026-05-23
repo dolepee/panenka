@@ -75,6 +75,7 @@ The authoritative live values are returned by `https://panenka-alpha.vercel.app/
 ## Current Upside Moves Added
 
 - Public replay route loads the latest settled duel from live X Layer state, with the proof settlement transaction as a fallback.
+- Homepage country race surfaces the top live countries from `KickerNFT` stats so judges see the rivalry loop before opening the leaderboard.
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
 - Country leaderboard rows include X challenge links for shareable rivalry posts.
 - Share links let players post settled results to X with `@XLayerOfficial` tagged.

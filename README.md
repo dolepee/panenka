@@ -23,6 +23,7 @@ Current live X Layer activity: `14` country kickers minted, `22` duels created, 
 - X Layer testnet deployment and first two-wallet duel proof.
 - Server-side Panenka Bot endpoint for one-wallet testing.
 - Public bot-readiness check so judges can see the one-wallet demo path is funded, capped, and ready before clicking.
+- Homepage country race shows the top live countries from `KickerNFT` stats so the rivalry loop is visible in the first screen.
 - Replay page loads the latest settled duel from live X Layer state, with the proof duel as a fallback.
 - Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
 - Country leaderboard rows include X challenge links so the World Cup rivalry loop can spread from each onchain result.

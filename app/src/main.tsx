@@ -308,7 +308,9 @@ function App() {
 
 function Home() {
   const [proof, setProof] = useState<ProofActivity | null>(null);
+  const [countryRace, setCountryRace] = useState<CountryLeaderboardRow[]>([]);
   const [proofStatus, setProofStatus] = useState("Loading live X Layer activity...");
+  const [raceStatus, setRaceStatus] = useState("Loading country race...");
 
   useEffect(() => {
     async function loadProof() {
@@ -323,6 +325,22 @@ function Home() {
       }
     }
     void loadProof();
+  }, []);
+
+  useEffect(() => {
+    async function loadCountryRace() {
+      try {
+        const response = await fetch("/api/leaderboard");
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Leaderboard API failed.");
+        const rows = (body.countryRows ?? []) as CountryLeaderboardRow[];
+        setCountryRace(rows.slice(0, 3));
+        setRaceStatus(rows.length ? "Live country race from KickerNFT stats." : "Country race appears after settled duels.");
+      } catch (error) {
+        setRaceStatus(error instanceof Error ? error.message : "Could not load country race.");
+      }
+    }
+    void loadCountryRace();
   }, []);
 
   const activity = proof?.onchainActivity;
@@ -359,6 +377,25 @@ function Home() {
             <span><strong>{activity?.mintedKickers ?? "-"}</strong> kickers minted</span>
             <span><strong>{activity?.settledDuels ?? "-"}</strong> duels settled</span>
             <span><strong>{activity?.countryCount ?? "-"}</strong> countries live</span>
+          </div>
+          <div className="countryRace">
+            <div className="countryRaceHeader">
+              <strong>Country race</strong>
+              <span>{raceStatus}</span>
+            </div>
+            {countryRace.length ? (
+              countryRace.map((row, index) => (
+                <a className="raceRow" href={shareCountryUrl(row, index + 1)} target="_blank" rel="noreferrer" key={row.country}>
+                  <span>#{index + 1}</span>
+                  <strong>{row.country}</strong>
+                  <span>{row.wins} wins</span>
+                  <span>{row.streak} streak</span>
+                  <em>challenge</em>
+                </a>
+              ))
+            ) : (
+              <p className="muted">Settle a duel to start the country race.</p>
+            )}
           </div>
           <div className="activityLinks">
             <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>

@@ -243,6 +243,59 @@ h2 {
   gap: 10px;
 }
 
+.countryRace {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(248, 255, 112, 0.16);
+  border-radius: 18px;
+  background: rgba(248, 255, 112, 0.045);
+}
+
+.countryRaceHeader,
+.raceRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.countryRaceHeader {
+  grid-template-columns: auto 1fr;
+  padding-bottom: 4px;
+}
+
+.countryRaceHeader strong {
+  color: #f8ff70;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.countryRaceHeader span {
+  text-align: right;
+}
+
+.raceRow {
+  padding: 10px 11px;
+  border: 1px solid rgba(248, 243, 231, 0.09);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.raceRow strong {
+  color: #f8f3e7;
+}
+
+.raceRow em {
+  color: #44f4c4;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .activityLinks a {
   padding: 9px 11px;
   border: 1px solid rgba(248, 255, 112, 0.2);
@@ -955,6 +1008,16 @@ h2 {
 
   .activityStats {
     grid-template-columns: 1fr;
+  }
+
+  .countryRaceHeader,
+  .raceRow {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .countryRaceHeader span {
+    text-align: left;
   }
 
   .revealStage {
