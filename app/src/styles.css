@@ -139,19 +139,19 @@ h1,
 h2 {
   margin: 0;
   max-width: 760px;
-  font-size: clamp(56px, 9vw, 116px);
-  line-height: 0.88;
-  letter-spacing: -0.08em;
+  font-size: clamp(48px, 7vw, 92px);
+  line-height: 0.9;
+  letter-spacing: -0.07em;
 }
 
 h2 {
-  font-size: clamp(44px, 7vw, 78px);
+  font-size: clamp(36px, 5.2vw, 62px);
 }
 
 .lede {
   max-width: 680px;
   color: rgba(248, 243, 231, 0.7);
-  font-size: 21px;
+  font-size: 19px;
   line-height: 1.5;
 }
 
@@ -356,7 +356,7 @@ h2 {
 }
 
 .page {
-  padding: 70px 0;
+  padding: 46px 0;
 }
 
 .grid {

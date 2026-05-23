@@ -309,15 +309,15 @@ function Home() {
     <section className="hero">
       <div>
         <p className="eyebrow">World Cup shootouts on X Layer</p>
-        <h1>Play a penalty duel in one wallet.</h1>
+        <h1>Penalty duels on X Layer.</h1>
         <p className="lede">
           Mint a country kicker, commit hidden shots, and face Panenka Bot in under a minute. Every reveal, round, score,
           credit transfer, and leaderboard move is verifiable on X Layer.
         </p>
         <div className="heroProof">
-          <span>1 wallet vs bot</span>
-          <span>remote friend links</span>
-          <span>onchain settlement</span>
+          <span>20 settled duels</span>
+          <span>8 countries live</span>
+          <span>14 kickers minted</span>
         </div>
         <article className="liveActivity">
           <div>
