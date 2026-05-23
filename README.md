@@ -12,7 +12,7 @@ Project X account: `https://x.com/PanenkaGG`
 
 Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
 
-Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard` so the README does not go stale as testers create more duels.
+Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard` so the README does not go stale as testers create more duels, kickers, countries, and active player wallets.
 
 ## Why This Fits X Cup
 
@@ -31,6 +31,7 @@ Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard`
 - Server-side Panenka Bot endpoint for one-wallet testing.
 - Public bot-readiness check so judges can see the one-wallet demo path is funded, capped, and ready before clicking.
 - Homepage playable-now card shows Panenka Bot readiness, public DCR cap, and bot fuel before a tester clicks.
+- Homepage activity cards show active X Layer player wallets as a market-potential signal, not just contract deployment.
 - Homepage country race shows the top live countries from `KickerNFT` stats so the rivalry loop is visible in the first screen.
 - Hero duel card links directly to replay, X sharing, and the latest settlement transaction.
 - Replay page loads the latest settled duel from live X Layer state, with the proof duel as a fallback.

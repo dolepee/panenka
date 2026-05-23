@@ -80,6 +80,7 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 
 - Public replay route loads the latest settled duel from live X Layer state, with the proof settlement transaction as a fallback.
 - Homepage playable-now card surfaces Panenka Bot readiness, public DCR cap, and bot fuel before a tester clicks into the play flow.
+- Homepage and `/api/proof` surface active player wallets from X Layer state so market-potential evidence is visible to judges.
 - Homepage country race surfaces the top live countries from `KickerNFT` stats so judges see the rivalry loop before opening the leaderboard.
 - Hero duel card links directly to replay, X sharing, and the latest settlement transaction.
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
@@ -88,7 +89,7 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 - Settled duel screen includes a copyable tester report so real testers can send back result and settlement tx quickly.
 - Panenka Bot is capped to public exhibition duels of `1 DCR` by default so the one-wallet demo path stays reliable during public testing.
 - `GET /api/bot-opponent` exposes Panenka Bot readiness, public stake cap, DCR balance, gas, allowance coverage, and kicker status.
-- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, settled/open/draw duel counts, recent duel states, recent settlement tx links, and verifier command.
+- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, active wallets, settled/open/draw duel counts, recent duel states, recent settlement tx links, and verifier command.
 - `npm run exhibition:run` can create real pre-submission activity with deterministic funded test wallets, country rotation, and multiple settled duels.
 
 ## Activity Target Before Final Demo

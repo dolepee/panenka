@@ -7,6 +7,7 @@ type ProofResponse = {
     duelsCreated?: number;
     settledDuels?: number;
     countryCount?: number;
+    activeWallets?: number;
   };
   recentDuels?: Array<{
     duelId?: string;
@@ -70,6 +71,7 @@ async function main() {
   assertOk((activity?.duelsCreated ?? 0) >= 31, `too few duels created: ${activity?.duelsCreated ?? 0}`);
   assertOk((activity?.settledDuels ?? 0) >= 30, `too few settled duels: ${activity?.settledDuels ?? 0}`);
   assertOk((activity?.countryCount ?? 0) >= 8, `too few countries represented: ${activity?.countryCount ?? 0}`);
+  assertOk((activity?.activeWallets ?? 0) >= 20, `too few active wallets: ${activity?.activeWallets ?? 0}`);
 
   const latestSettled = proof.recentDuels?.find((duel) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country);
   assertOk(latestSettled, "no recent settled duel with country names");
@@ -93,6 +95,7 @@ async function main() {
   console.log(
     `activity: ${activity?.mintedKickers} kickers, ${activity?.duelsCreated} duels created, ${activity?.settledDuels} settled, ${activity?.countryCount} countries`,
   );
+  console.log(`wallets: ${activity?.activeWallets} active player wallets`);
   console.log(
     `latest: #${latestSettled?.duelId} ${latestSettled?.p1Country} ${latestSettled?.score} ${latestSettled?.p2Country}`,
   );

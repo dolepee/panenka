@@ -42,6 +42,7 @@ const chain = defineChain({
 
 const kickerAbi = parseAbi([
   "function nextTokenId() external view returns (uint256)",
+  "function ownerOf(uint256 tokenId) external view returns (address)",
   "function statsOf(uint256 tokenId) external view returns (uint8 countryId, uint32 wins, uint32 losses, uint32 streak, uint32 level)",
 ]);
 const duelAbi = parseAbi([
@@ -108,9 +109,13 @@ export default async function handler(_: any, response: any) {
   const kickerStats = await Promise.all(
     kickerIds.map(async (tokenId) => {
       try {
-        const stats = await client.readContract({ address: KICKER_NFT, abi: kickerAbi, functionName: "statsOf", args: [tokenId] });
+        const [owner, stats] = await Promise.all([
+          client.readContract({ address: KICKER_NFT, abi: kickerAbi, functionName: "ownerOf", args: [tokenId] }),
+          client.readContract({ address: KICKER_NFT, abi: kickerAbi, functionName: "statsOf", args: [tokenId] }),
+        ]);
         return {
           tokenId: tokenId.toString(),
+          owner,
           countryId: Number(stats[0]),
           wins: Number(stats[1]),
           losses: Number(stats[2]),
@@ -125,6 +130,7 @@ export default async function handler(_: any, response: any) {
   const readableKickers = kickerStats.filter(Boolean);
   const kickerById = Object.fromEntries(readableKickers.map((row) => [row.tokenId, row]));
   const countryIds = new Set(readableKickers.map((row) => row.countryId));
+  const activeWallets = new Set(readableKickers.map((row) => row.owner?.toLowerCase()).filter(Boolean));
   let settlementByDuelId: Record<string, { hash: string; explorer: string; blockNumber: string | null; logIndex: number | null }> =
     Object.fromEntries(
       Object.entries(KNOWN_SETTLEMENT_TXS).map(([duelId, hash]) => [
@@ -177,14 +183,18 @@ export default async function handler(_: any, response: any) {
         const p2KickerTokenId = field(p2, "kickerTokenId", 1)?.toString?.() ?? "0";
         const p1Kicker = kickerById[p1KickerTokenId];
         const p2Kicker = kickerById[p2KickerTokenId];
+        const playerOne = field(p1, "player", 0);
+        const playerTwo = field(p2, "player", 0);
+        if (playerOne && playerOne !== "0x0000000000000000000000000000000000000000") activeWallets.add(playerOne.toLowerCase());
+        if (playerTwo && playerTwo !== "0x0000000000000000000000000000000000000000") activeWallets.add(playerTwo.toLowerCase());
         const score = status === 2 ? scoreDuel(state) : null;
         const settlementTx = status === 2 ? settlementByDuelId[duelId.toString()] ?? null : null;
         return {
           duelId: duelId.toString(),
           status,
           statusLabel: statusLabels[status] ?? `Status ${status}`,
-          playerOne: field(p1, "player", 0),
-          playerTwo: field(p2, "player", 0),
+          playerOne,
+          playerTwo,
           p1KickerTokenId,
           p2KickerTokenId,
           p1Country: countries[p1Kicker?.countryId] ?? null,
@@ -243,6 +253,7 @@ export default async function handler(_: any, response: any) {
       proofFromBlock: PROOF_FROM_BLOCK.toString(),
       countryCount: countryIds.size,
       indexedKickers: readableKickers.length,
+      activeWallets: activeWallets.size,
     },
     recentDuels: duels.slice(-8).reverse(),
     proofDuel: {

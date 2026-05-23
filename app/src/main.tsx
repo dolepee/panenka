@@ -87,6 +87,7 @@ type ProofActivity = {
     settledDuels: number;
     duelsCreated: number;
     countryCount: number;
+    activeWallets?: number;
   };
   proofDuel?: {
     transactions?: { playerTwoRevealAndSettle?: { explorer: string } };
@@ -420,6 +421,7 @@ function Home() {
         <div className="heroProof">
           <span>{activity?.settledDuels ?? "-"} settled duels</span>
           <span>{activity?.countryCount ?? "-"} countries live</span>
+          <span>{activity?.activeWallets ?? activity?.mintedKickers ?? "-"} active wallets</span>
           <span>{activity?.mintedKickers ?? "-"} kickers minted</span>
           <span>game, not gamble</span>
         </div>
@@ -432,6 +434,7 @@ function Home() {
             <span><strong>{activity?.mintedKickers ?? "-"}</strong> kickers minted</span>
             <span><strong>{activity?.settledDuels ?? "-"}</strong> duels settled</span>
             <span><strong>{activity?.countryCount ?? "-"}</strong> countries live</span>
+            <span><strong>{activity?.activeWallets ?? "-"}</strong> active wallets</span>
           </div>
           <div className="countryRace">
             <div className="countryRaceHeader">
