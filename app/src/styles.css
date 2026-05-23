@@ -296,6 +296,50 @@ h2 {
   text-transform: uppercase;
 }
 
+.botReady {
+  display: grid;
+  grid-template-columns: 1.2fr auto auto auto;
+  gap: 10px;
+  align-items: stretch;
+  padding: 12px;
+  border: 1px solid rgba(248, 243, 231, 0.1);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.botReady.isReady {
+  border-color: rgba(68, 244, 196, 0.24);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(68, 244, 196, 0.12), transparent 18rem),
+    rgba(0, 0, 0, 0.18);
+}
+
+.botReady div,
+.botReady a {
+  display: grid;
+  gap: 5px;
+  align-content: center;
+  padding: 10px 11px;
+  border: 1px solid rgba(248, 243, 231, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.botReady strong {
+  color: #f8f3e7;
+  line-height: 1.2;
+}
+
+.botReady a {
+  color: #061009;
+  background: linear-gradient(135deg, #44f4c4, #f8ff70);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .activityLinks a {
   padding: 9px 11px;
   border: 1px solid rgba(248, 255, 112, 0.2);
@@ -1018,6 +1062,10 @@ h2 {
 
   .countryRaceHeader span {
     text-align: left;
+  }
+
+  .botReady {
+    grid-template-columns: 1fr;
   }
 
   .revealStage {

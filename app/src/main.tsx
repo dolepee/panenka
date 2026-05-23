@@ -309,8 +309,10 @@ function App() {
 function Home() {
   const [proof, setProof] = useState<ProofActivity | null>(null);
   const [countryRace, setCountryRace] = useState<CountryLeaderboardRow[]>([]);
+  const [homeBotHealth, setHomeBotHealth] = useState<BotHealth | null>(null);
   const [proofStatus, setProofStatus] = useState("Loading live X Layer activity...");
   const [raceStatus, setRaceStatus] = useState("Loading country race...");
+  const [homeBotStatus, setHomeBotStatus] = useState("Checking Panenka Bot...");
 
   useEffect(() => {
     async function loadProof() {
@@ -341,6 +343,21 @@ function Home() {
       }
     }
     void loadCountryRace();
+  }, []);
+
+  useEffect(() => {
+    async function loadBotHealth() {
+      try {
+        const response = await fetch("/api/bot-opponent");
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Bot health check failed.");
+        setHomeBotHealth(body);
+        setHomeBotStatus(body.ready ? "Panenka Bot is ready for public duels." : "Panenka Bot is not ready right now.");
+      } catch (error) {
+        setHomeBotStatus(error instanceof Error ? error.message : "Could not load bot status.");
+      }
+    }
+    void loadBotHealth();
   }, []);
 
   const activity = proof?.onchainActivity;
@@ -396,6 +413,25 @@ function Home() {
             ) : (
               <p className="muted">Settle a duel to start the country race.</p>
             )}
+          </div>
+          <div className={`botReady ${homeBotHealth?.ready ? "isReady" : ""}`}>
+            <div>
+              <span>Playable now</span>
+              <strong>{homeBotStatus}</strong>
+            </div>
+            <div>
+              <span>Public cap</span>
+              <strong>
+                {homeBotHealth ? `${Number(homeBotHealth.publicStakeCap).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR` : "-"}
+              </strong>
+            </div>
+            <div>
+              <span>Bot fuel</span>
+              <strong>
+                {homeBotHealth ? `${Number(homeBotHealth.duelCredit).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR` : "-"}
+              </strong>
+            </div>
+            <a href="#play">Start a bot duel</a>
           </div>
           <div className="activityLinks">
             <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>
