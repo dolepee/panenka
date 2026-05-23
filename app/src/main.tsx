@@ -150,6 +150,12 @@ function shareResultUrl(text: string) {
   return `https://x.com/intent/tweet?text=${encodeURIComponent(`${text}\n\nBuilt on @XLayerOfficial.\nhttps://panenka-alpha.vercel.app`)}`;
 }
 
+function shareCountryUrl(row: CountryLeaderboardRow, rank: number) {
+  return shareResultUrl(
+    `${row.country} is #${rank} on Panenka with ${row.wins} wins, ${row.kickers} country kickers, and a ${row.streak} best streak. Challenge this country in an onchain penalty duel on X Layer.`,
+  );
+}
+
 function planKey(account: string, duelId: number) {
   return `panenka-plan:${addresses.penaltyDuel?.toLowerCase()}:${account.toLowerCase()}:${duelId}`;
 }
@@ -338,9 +344,9 @@ function Home() {
           credit transfer, and leaderboard move is verifiable on X Layer.
         </p>
         <div className="heroProof">
-          <span>20 settled duels</span>
-          <span>8 countries live</span>
-          <span>14 kickers minted</span>
+          <span>{activity?.settledDuels ?? 20} settled duels</span>
+          <span>{activity?.countryCount ?? 8} countries live</span>
+          <span>{activity?.mintedKickers ?? 14} kickers minted</span>
         </div>
         <article className="liveActivity">
           <div>
@@ -1209,6 +1215,9 @@ function Leaderboard() {
             <span>{row.losses} losses</span>
             <span>{row.streak} best streak</span>
             <span>best #{row.bestTokenId}</span>
+            <a className="sharePill" href={shareCountryUrl(row, index + 1)} target="_blank" rel="noreferrer">
+              Challenge on X
+            </a>
           </div>
         ))}
         {!countryRows.length ? <p className="muted">Country totals appear after the first settled duel.</p> : null}

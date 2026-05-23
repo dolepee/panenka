@@ -780,6 +780,27 @@ h2 {
   color: #f8ff70;
 }
 
+.sharePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 8px 10px;
+  border: 1px solid rgba(68, 244, 196, 0.26);
+  border-radius: 999px;
+  color: #44f4c4;
+  background: rgba(68, 244, 196, 0.08);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sharePill:hover {
+  border-color: rgba(68, 244, 196, 0.55);
+  background: rgba(68, 244, 196, 0.14);
+}
+
 .replayArena {
   margin-top: 30px;
   padding: 24px;
