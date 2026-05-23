@@ -27,7 +27,11 @@ const chain = defineChain({
 });
 
 const kickerAbi = parseAbi(["function nextTokenId() external view returns (uint256)"]);
-const duelAbi = parseAbi(["function nextDuelId() external view returns (uint256)"]);
+const duelAbi = parseAbi([
+  "function nextDuelId() external view returns (uint256)",
+  "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
+]);
+const statusLabels = ["Open", "Committed", "Settled", "Cancelled", "Forfeited"];
 
 function addressUrl(address: string) {
   return `${XLAYER_EXPLORER}/address/${address}`;
@@ -35,6 +39,30 @@ function addressUrl(address: string) {
 
 function txUrl(hash: string) {
   return `${XLAYER_EXPLORER}/tx/${hash}`;
+}
+
+function field(value: any, key: string, index: number) {
+  return value?.[key] ?? value?.[index];
+}
+
+function scoreDuel(duel: any) {
+  const p1 = field(duel, "p1", 5);
+  const p2 = field(duel, "p2", 6);
+  const p1Shots = field(p1, "shots", 4) ?? [];
+  const p1Saves = field(p1, "saves", 5) ?? [];
+  const p2Shots = field(p2, "shots", 4) ?? [];
+  const p2Saves = field(p2, "saves", 5) ?? [];
+  let p1Score = 0;
+  let p2Score = 0;
+  const rounds = [];
+  for (let index = 0; index < 5; index++) {
+    const p1Goal = Number(p1Shots[index]) !== Number(p2Saves[index]);
+    const p2Goal = Number(p2Shots[index]) !== Number(p1Saves[index]);
+    if (p1Goal) p1Score += 1;
+    if (p2Goal) p2Score += 1;
+    rounds.push({ round: index + 1, p1Goal, p2Goal });
+  }
+  return { p1Score, p2Score, draw: p1Score === p2Score, rounds };
 }
 
 export default async function handler(_: any, response: any) {
@@ -46,6 +74,37 @@ export default async function handler(_: any, response: any) {
     client.getBytecode({ address: PENALTY_DUEL }),
     client.getTransactionReceipt({ hash: PROOF_TXS.playerTwoRevealAndSettle as `0x${string}` }),
   ]);
+  const duelIds = Array.from({ length: Number((nextDuelId as bigint) - 1n) }, (_, index) => BigInt(index + 1));
+  const duelReads = await Promise.all(
+    duelIds.map(async (duelId) => {
+      try {
+        const state = await client.readContract({ address: PENALTY_DUEL, abi: duelAbi, functionName: "getDuel", args: [duelId] });
+        const status = Number(field(state, "status", 4));
+        const p1 = field(state, "p1", 5);
+        const p2 = field(state, "p2", 6);
+        const score = status === 2 ? scoreDuel(state) : null;
+        return {
+          duelId: duelId.toString(),
+          status,
+          statusLabel: statusLabels[status] ?? `Status ${status}`,
+          playerOne: field(p1, "player", 0),
+          playerTwo: field(p2, "player", 0),
+          p1Revealed: Boolean(field(p1, "revealed", 3)),
+          p2Revealed: Boolean(field(p2, "revealed", 3)),
+          score: score ? `${score.p1Score}-${score.p2Score}` : null,
+          draw: score?.draw ?? false,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const duels = duelReads.filter(Boolean);
+  const settledDuels = duels.filter((duel) => duel.status === 2);
+  const statusCounts = duels.reduce((acc, duel) => {
+    acc[duel.statusLabel] = (acc[duel.statusLabel] ?? 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   response.status(200).json({
     project: "Panenka",
@@ -71,8 +130,17 @@ export default async function handler(_: any, response: any) {
     onchainActivity: {
       mintedKickers: Number((nextTokenId as bigint) - 1n),
       duelsCreated: Number((nextDuelId as bigint) - 1n),
+      duelsIndexed: duels.length,
+      settledDuels: settledDuels.length,
+      openDuels: statusCounts.Open ?? 0,
+      committedDuels: statusCounts.Committed ?? 0,
+      cancelledDuels: statusCounts.Cancelled ?? 0,
+      forfeitedDuels: statusCounts.Forfeited ?? 0,
+      drawSettlements: settledDuels.filter((duel) => duel.draw).length,
+      statusCounts,
       proofFromBlock: PROOF_FROM_BLOCK.toString(),
     },
+    recentDuels: duels.slice(-8).reverse(),
     proofDuel: {
       duelId: PROOF_DUEL_ID,
       matchup: "Nigeria 3-0 France",

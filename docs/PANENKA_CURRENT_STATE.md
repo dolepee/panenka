@@ -64,7 +64,7 @@ PANENKA_DUEL_VALID
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
 - Share links let players post settled results to X with `@XLayerOfficial` tagged.
 - Panenka Bot is capped to exhibition duels of `5 DCR` by default.
-- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, current activity counts, and verifier command.
+- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, settled/open/draw duel counts, recent duel states, and verifier command.
 - `npm run exhibition:run` can create real pre-submission activity with deterministic funded test wallets, country rotation, and multiple settled duels.
 
 ## Activity Target Before Final Demo

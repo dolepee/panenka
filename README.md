@@ -22,7 +22,7 @@ Public testers can play with one wallet against Panenka Bot. The contract still 
 - Server-side Panenka Bot endpoint for one-wallet testing.
 - Replay page decodes the proof duel directly from X Layer settlement logs.
 - Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
-- Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, activity counts, and verifier marker.
+- Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, settled/open/draw duel counts, recent duels, and verifier marker.
 
 ## X Layer Testnet Proof
 
