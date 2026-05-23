@@ -389,7 +389,7 @@ function Play({
   connect: () => Promise<void>;
 }) {
   const [selectedCountry, setSelectedCountry] = useState(countries[3]);
-  const [stake, setStake] = useState("5");
+  const [stake, setStake] = useState("1");
   const [joinDuelId, setJoinDuelId] = useState("");
   const [revealDuelId, setRevealDuelId] = useState("");
   const [status, setStatus] = useState("Ready.");
