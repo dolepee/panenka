@@ -158,6 +158,35 @@ function shareCountryUrl(row: CountryLeaderboardRow, rank: number) {
   );
 }
 
+function xLayerChainIdHex() {
+  return `0x${XLAYER_CHAIN_ID.toString(16)}`;
+}
+
+async function ensureXLayer(wallet: WalletProvider) {
+  const expectedChainId = xLayerChainIdHex();
+  const currentChainId = (await wallet.request({ method: "eth_chainId" })) as string;
+  if (currentChainId?.toLowerCase() === expectedChainId.toLowerCase()) return;
+  try {
+    await wallet.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: expectedChainId }],
+    });
+  } catch {
+    await wallet.request({
+      method: "wallet_addEthereumChain",
+      params: [
+        {
+          chainId: expectedChainId,
+          chainName: xLayer.name,
+          nativeCurrency: xLayer.nativeCurrency,
+          rpcUrls: xLayer.rpcUrls.default.http,
+          blockExplorerUrls: [XLAYER_EXPLORER],
+        },
+      ],
+    });
+  }
+}
+
 function planKey(account: string, duelId: number) {
   return `panenka-plan:${addresses.penaltyDuel?.toLowerCase()}:${account.toLowerCase()}:${duelId}`;
 }
@@ -254,27 +283,9 @@ function App() {
     const wallet = window.okxwallet ?? window.ethereum;
     if (!wallet) return;
     const accounts = (await wallet.request({ method: "eth_requestAccounts" })) as `0x${string}`[];
+    await ensureXLayer(wallet);
     setProvider(wallet);
     setAccount(accounts[0] ?? "");
-    try {
-      await wallet.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: `0x${XLAYER_CHAIN_ID.toString(16)}` }],
-      });
-    } catch {
-      await wallet.request({
-        method: "wallet_addEthereumChain",
-        params: [
-          {
-            chainId: `0x${XLAYER_CHAIN_ID.toString(16)}`,
-            chainName: xLayer.name,
-            nativeCurrency: xLayer.nativeCurrency,
-            rpcUrls: xLayer.rpcUrls.default.http,
-            blockExplorerUrls: [XLAYER_EXPLORER],
-          },
-        ],
-      });
-    }
   }
 
   return (
@@ -651,7 +662,12 @@ function Play({
       if (!account) await connect();
       return;
     }
+    if (!provider) {
+      notify("Connect wallet first.");
+      return;
+    }
     try {
+      await ensureXLayer(provider);
       notify(`${label}...`);
       const hash = await action();
       setLastTx(hash);
