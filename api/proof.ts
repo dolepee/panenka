@@ -85,6 +85,31 @@ function scoreDuel(duel: any) {
   return { p1Score, p2Score, draw: p1Score === p2Score, rounds };
 }
 
+async function getSettlementLogs(client: ReturnType<typeof createPublicClient>, fromBlock: bigint, toBlock: bigint) {
+  const logs: any[] = [];
+  async function collect(from: bigint, to: bigint) {
+    if (from > to) return;
+    try {
+      logs.push(
+        ...(await client.getLogs({
+          address: PENALTY_DUEL,
+          event: settledEvent,
+          fromBlock: from,
+          toBlock: to,
+        })),
+      );
+      return;
+    } catch {
+      if (from === to) return;
+      const midpoint = from + (to - from) / 2n;
+      await collect(from, midpoint);
+      await collect(midpoint + 1n, to);
+    }
+  }
+  await collect(fromBlock, toBlock);
+  return logs;
+}
+
 export default async function handler(_: any, response: any) {
   const client = createPublicClient({ chain, transport: http(XLAYER_RPC_URL) });
   const [latestBlock, nextTokenId, nextDuelId, code, proofReceipt] = await Promise.all([
@@ -128,12 +153,7 @@ export default async function handler(_: any, response: any) {
       ]),
     );
   try {
-    const settlementLogs = await client.getLogs({
-      address: PENALTY_DUEL,
-      event: settledEvent,
-      fromBlock: PROOF_FROM_BLOCK,
-      toBlock: latestBlock,
-    });
+    const settlementLogs = await getSettlementLogs(client, PROOF_FROM_BLOCK, latestBlock);
     settlementByDuelId = {
       ...settlementByDuelId,
       ...Object.fromEntries(
