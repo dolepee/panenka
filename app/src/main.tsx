@@ -98,6 +98,7 @@ type ProofActivity = {
     p2Country?: string | null;
     score?: string | null;
     settlementTx?: { hash: string; explorer: string } | null;
+    settlementTxStatus?: "available" | "unavailable" | "not-settled";
   }>;
 };
 type BotHealth = {
@@ -363,7 +364,7 @@ function Home() {
   const activity = proof?.onchainActivity;
   const latestSettledDuel = proof?.recentDuels?.find((duel) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country);
   const latestSettlementTx = latestSettledDuel?.settlementTx?.explorer;
-  const proofTx = latestSettlementTx ?? proof?.proofDuel?.transactions?.playerTwoRevealAndSettle?.explorer;
+  const proofDuelTx = proof?.proofDuel?.transactions?.playerTwoRevealAndSettle?.explorer;
   const duelContract = proof?.contracts?.PenaltyDuel;
   const heroDuelId = latestSettledDuel?.duelId ?? "1";
   const heroSideOne = latestSettledDuel?.p1Country ?? "Nigeria";
@@ -437,7 +438,8 @@ function Home() {
           <div className="activityLinks">
             <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>
             {duelContract ? <a href={duelContract.explorer} target="_blank" rel="noreferrer">Duel contract</a> : null}
-            {proofTx ? <a href={proofTx} target="_blank" rel="noreferrer">{latestSettlementTx ? "Latest tx" : "Proof tx"}</a> : null}
+            {latestSettlementTx ? <a href={latestSettlementTx} target="_blank" rel="noreferrer">Latest tx</a> : null}
+            {!latestSettlementTx && proofDuelTx ? <a href={proofDuelTx} target="_blank" rel="noreferrer">Baseline proof tx</a> : null}
           </div>
         </article>
         <div className="ctaRow">
@@ -469,7 +471,11 @@ function Home() {
         <div className="heroDuelActions">
           <a href="#replay">Replay this duel</a>
           <a href={shareResultUrl(heroShareText)} target="_blank" rel="noreferrer">Share result</a>
-          {proofTx ? <a href={proofTx} target="_blank" rel="noreferrer">Open tx</a> : null}
+          {latestSettlementTx ? (
+            <a href={latestSettlementTx} target="_blank" rel="noreferrer">Open latest tx</a>
+          ) : (
+            <a href="/api/proof" target="_blank" rel="noreferrer">Open proof API</a>
+          )}
         </div>
       </div>
     </section>
@@ -1166,7 +1172,11 @@ function Replay() {
           setReplayDuelId(latest.duelId);
           setProofHref(latest.settlementTx?.explorer ?? "/api/proof");
           setProofLabel(latest.settlementTx?.explorer ? "Open settlement tx" : "Open proof API");
-          setStatus(`Latest settled duel #${latest.duelId} loaded from X Layer state at block ${proofBody.chain?.latestBlock ?? "unknown"}.`);
+          setStatus(
+            latest.settlementTx?.explorer
+              ? `Latest settled duel #${latest.duelId} loaded from X Layer state at block ${proofBody.chain?.latestBlock ?? "unknown"}.`
+              : `Latest settled duel #${latest.duelId} loaded from X Layer state. Settlement log unavailable from RPC; proof API shows the indexed state.`,
+          );
           return;
         }
 

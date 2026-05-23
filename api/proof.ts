@@ -164,6 +164,7 @@ export default async function handler(_: any, response: any) {
         const p1Kicker = kickerById[p1KickerTokenId];
         const p2Kicker = kickerById[p2KickerTokenId];
         const score = status === 2 ? scoreDuel(state) : null;
+        const settlementTx = status === 2 ? settlementByDuelId[duelId.toString()] ?? null : null;
         return {
           duelId: duelId.toString(),
           status,
@@ -178,7 +179,8 @@ export default async function handler(_: any, response: any) {
           p2Revealed: Boolean(field(p2, "revealed", 3)),
           score: score ? `${score.p1Score}-${score.p2Score}` : null,
           draw: score?.draw ?? false,
-          settlementTx: status === 2 ? settlementByDuelId[duelId.toString()] ?? null : null,
+          settlementTx,
+          settlementTxStatus: status !== 2 ? "not-settled" : settlementTx ? "available" : "unavailable",
         };
       } catch {
         return null;
