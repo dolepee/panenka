@@ -62,7 +62,9 @@ PANENKA_DUEL_VALID
 
 ## Live Activity Snapshot
 
-As of 2026-05-23, the live X Layer testnet deployment has:
+The authoritative live values are returned by `https://panenka-alpha.vercel.app/api/proof` and `https://panenka-alpha.vercel.app/api/leaderboard`.
+
+Last verified pre-submission snapshot on 2026-05-23:
 
 - `14` country kickers minted.
 - `22` duels created.
@@ -70,7 +72,7 @@ As of 2026-05-23, the live X Layer testnet deployment has:
 - `8` countries represented in the country leaderboard.
 - `3` level-2 kickers from repeated onchain wins.
 
-The authoritative live values are returned by `https://panenka-alpha.vercel.app/api/proof` and `https://panenka-alpha.vercel.app/api/leaderboard`.
+Treat the live endpoints as canonical if this snapshot is lower than the current app.
 
 ## Current Upside Moves Added
 

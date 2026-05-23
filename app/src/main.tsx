@@ -383,9 +383,9 @@ function Home() {
           credit transfer, and leaderboard move is verifiable on X Layer.
         </p>
         <div className="heroProof">
-          <span>{activity?.settledDuels ?? 20} settled duels</span>
-          <span>{activity?.countryCount ?? 8} countries live</span>
-          <span>{activity?.mintedKickers ?? 14} kickers minted</span>
+          <span>{activity?.settledDuels ?? "-"} settled duels</span>
+          <span>{activity?.countryCount ?? "-"} countries live</span>
+          <span>{activity?.mintedKickers ?? "-"} kickers minted</span>
         </div>
         <article className="liveActivity">
           <div>
@@ -467,7 +467,7 @@ function Home() {
           <strong>{heroSideTwoScore ?? "-"}</strong>
           <span>{heroSideTwo}</span>
         </div>
-        <div className="heroTx">latest settled duel · {activity?.settledDuels ?? 20} total settlements · NFT stats updated</div>
+        <div className="heroTx">latest settled duel · {activity?.settledDuels ?? "-"} total settlements · NFT stats updated</div>
         <div className="heroDuelActions">
           <a href="#replay">Replay this duel</a>
           <a href={shareResultUrl(heroShareText)} target="_blank" rel="noreferrer">Share result</a>
