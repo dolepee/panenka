@@ -154,6 +154,10 @@ function shareResultUrl(text: string) {
   return `https://x.com/intent/tweet?text=${encodeURIComponent(`${text}\n\nPlayed on @PanenkaGG, built on @XLayerOfficial.\nhttps://panenka-alpha.vercel.app\n\n#XLayerHackathon`)}`;
 }
 
+function shareProofUrl(text: string) {
+  return `https://x.com/intent/tweet?text=${encodeURIComponent(`${text}\n\nhttps://panenka-alpha.vercel.app\n\n@XLayerOfficial #XLayerHackathon`)}`;
+}
+
 function shareCountryUrl(row: CountryLeaderboardRow, rank: number) {
   return shareResultUrl(
     `${row.country} is #${rank} on Panenka with ${row.wins} wins, ${row.kickers} country kickers, and a ${row.streak} best streak. Challenge this country in an onchain penalty duel on X Layer.`,
@@ -386,6 +390,16 @@ function Home() {
   const heroScore = latestSettledDuel?.score ?? "3-0";
   const [heroSideOneScore, heroSideTwoScore] = heroScore.split("-");
   const heroShareText = `Panenka duel #${heroDuelId}: ${heroSideOne} ${heroScore} ${heroSideTwo} on X Layer`;
+  const liveProofShareText = [
+    "Panenka proof update:",
+    `${activity?.settledDuels ?? "30"} settled penalty duels`,
+    `${activity?.activeWallets ?? "20"} active player wallets`,
+    `${activity?.countryCount ?? "8"} countries onchain`,
+    "",
+    `Latest replay: ${heroSideOne} ${heroScore} ${heroSideTwo}.`,
+    "",
+    "Game, not market: hidden commit -> reveal -> settle on X Layer.",
+  ].join("\n");
   const testerInvite = [
     "Can you test Panenka for me? It is a World Cup-style penalty shootout game on X Layer testnet.",
     "",
@@ -494,6 +508,7 @@ function Home() {
             </div>
           </div>
           <div className="activityLinks">
+            <a href={shareProofUrl(liveProofShareText)} target="_blank" rel="noreferrer">Share live proof</a>
             <a href="https://x.com/PanenkaGG" target="_blank" rel="noreferrer">Project X</a>
             <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>
             {duelContract ? <a href={duelContract.explorer} target="_blank" rel="noreferrer">Duel contract</a> : null}
