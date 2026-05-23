@@ -61,12 +61,41 @@ export default async function handler(_: any, response: any) {
   const rankedRows = rows
     .sort((a, b) => b.wins - a.wins || b.streak - a.streak || a.losses - b.losses || Number(a.tokenId) - Number(b.tokenId))
     .slice(0, 12);
+  const countryRows = Object.values(
+    rows.reduce(
+      (acc, row) => {
+        const current = acc[row.country] ?? {
+          countryId: row.countryId,
+          country: row.country,
+          kickers: 0,
+          wins: 0,
+          losses: 0,
+          streak: 0,
+          bestTokenId: row.tokenId,
+        };
+        current.kickers += 1;
+        current.wins += row.wins;
+        current.losses += row.losses;
+        current.streak = Math.max(current.streak, row.streak);
+        if (row.wins > (rows.find((candidate) => candidate.tokenId === current.bestTokenId)?.wins ?? -1)) {
+          current.bestTokenId = row.tokenId;
+        }
+        acc[row.country] = current;
+        return acc;
+      },
+      {} as Record<
+        string,
+        { countryId: number; country: string; kickers: number; wins: number; losses: number; streak: number; bestTokenId: string }
+      >,
+    ),
+  ).sort((a, b) => b.wins - a.wins || b.streak - a.streak || a.losses - b.losses || a.country.localeCompare(b.country));
 
   response.status(200).json({
     chainId: XLAYER_CHAIN_ID,
     latestBlock: latest.toString(),
     nextTokenId: (nextTokenId as bigint).toString(),
     source: "KickerNFT ownerOf/statsOf",
+    countryRows,
     rows: rankedRows,
   });
 }

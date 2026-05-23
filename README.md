@@ -6,6 +6,8 @@ This MVP is a game, not a betting market. V1 uses non-transferable DuelCredit in
 
 Live app: `https://panenka-alpha.vercel.app`
 
+Judge proof endpoint: `https://panenka-alpha.vercel.app/api/proof`
+
 Project X account: `https://x.com/PanenkaGG`
 
 Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
@@ -18,7 +20,9 @@ Public testers can play with one wallet against Panenka Bot. The contract still 
 - Foundry tests covering the full duel lifecycle and failure cases.
 - X Layer testnet deployment and first two-wallet duel proof.
 - Server-side Panenka Bot endpoint for one-wallet testing.
-- Live leaderboard reads `KickerNFT` owner and stats state from X Layer.
+- Replay page decodes the proof duel directly from X Layer settlement logs.
+- Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
+- Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, activity counts, and verifier marker.
 
 ## X Layer Testnet Proof
 
@@ -119,6 +123,12 @@ These events are the judge-facing proof: a duel has two players, both commits ar
 6. Reveal from your wallet.
 7. Click `Bot reveals and settles`, or ask the human opponent to reveal.
 8. The UI shows the settlement transaction, stats update, and leaderboard change.
+
+Fast judge path:
+
+1. Open `https://panenka-alpha.vercel.app/#replay` to watch the settled proof duel from X Layer logs without a wallet.
+2. Open `https://panenka-alpha.vercel.app/#leaderboard` to see country rivalry and kicker rankings read from `KickerNFT`.
+3. Open `https://panenka-alpha.vercel.app/api/proof` for machine-readable X Layer proof and `npm run verify:duel` for repo replay.
 
 ## Scope Guard
 

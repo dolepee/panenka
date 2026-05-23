@@ -18,6 +18,7 @@ const BOT_PRIVATE_KEY = process.env.BOT_PRIVATE_KEY as `0x${string}` | undefined
 const DUEL_CREDIT = (process.env.DUEL_CREDIT_ADDRESS ?? "0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98") as `0x${string}`;
 const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0x33dc85f938f21c8cf83556f444d16e61377a35a3") as `0x${string}`;
 const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xebd15b2baa79a84d6e509b2dae12526abe5dacdb") as `0x${string}`;
+const BOT_MAX_STAKE_WEI = BigInt(process.env.BOT_MAX_STAKE_WEI ?? "5000000000000000000");
 
 const chain = defineChain({
   id: XLAYER_CHAIN_ID,
@@ -127,6 +128,10 @@ export default async function handler(request: any, response: any) {
       }
       if (Number(duel.status) !== 0) {
         response.status(400).json({ error: "Panenka Bot can only join an open duel." });
+        return;
+      }
+      if ((duel.stake as bigint) > BOT_MAX_STAKE_WEI) {
+        response.status(400).json({ error: "Panenka Bot only joins exhibition duels up to 5 DCR." });
         return;
       }
 

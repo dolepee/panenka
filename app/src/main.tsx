@@ -57,6 +57,10 @@ type RoundResult = {
   round: number;
   youGoal: boolean;
   botGoal: boolean;
+  p1Shot?: number;
+  p2Shot?: number;
+  p1Save?: number;
+  p2Save?: number;
 };
 type LeaderboardRow = {
   tokenId: string;
@@ -66,6 +70,14 @@ type LeaderboardRow = {
   losses: number;
   streak: number;
   level: number;
+};
+type CountryLeaderboardRow = {
+  country: string;
+  kickers: number;
+  wins: number;
+  losses: number;
+  streak: number;
+  bestTokenId: string;
 };
 
 const countries = [
@@ -80,6 +92,8 @@ const countries = [
 ];
 const countryById = Object.fromEntries(countries.map((country) => [country.id, country.name]));
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const PROOF_DUEL_ID = 1;
+const PROOF_SETTLEMENT_TX = "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b";
 
 const publicClient = createPublicClient({ chain: xLayer, transport: http() });
 
@@ -100,6 +114,10 @@ function playLink(duelId: number | string) {
 
 function explorerAddress(address: string) {
   return `${XLAYER_EXPLORER}/address/${address}`;
+}
+
+function shareResultUrl(text: string) {
+  return `https://x.com/intent/tweet?text=${encodeURIComponent(`${text}\n\nBuilt on @XLayerOfficial.\nhttps://panenka-alpha.vercel.app`)}`;
 }
 
 function planKey(account: string, duelId: number) {
@@ -229,6 +247,7 @@ function App() {
         </a>
         <div className="links">
           <a href="#play">Play</a>
+          <a href="#replay">Replay</a>
           <a href="#leaderboard">Leaderboard</a>
           <a href="#me">Me</a>
           <button onClick={connect}>{account ? short(account) : "Connect wallet"}</button>
@@ -237,6 +256,8 @@ function App() {
 
       {page === "play" ? (
         <Play account={account} provider={provider} connect={connect} />
+      ) : page === "replay" ? (
+        <Replay />
       ) : page === "leaderboard" ? (
         <Leaderboard />
       ) : page === "me" ? (
@@ -621,6 +642,10 @@ function Play({
             round: Number(args.round),
             youGoal: Boolean(args.p1Goal),
             botGoal: Boolean(args.p2Goal),
+            p1Shot: Number(args.p1Shot),
+            p2Shot: Number(args.p2Shot),
+            p1Save: Number(args.p1Save),
+            p2Save: Number(args.p2Save),
           });
           continue;
         }
@@ -763,6 +788,7 @@ function Play({
             </div>
           ) : null}
           {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">Open settlement tx</a> : null}
+          <a href={shareResultUrl(settlementText)} target="_blank" rel="noreferrer">Share result on X</a>
         </article>
       ) : null}
 
@@ -866,8 +892,119 @@ function Play({
   );
 }
 
+function Replay() {
+  const [rounds, setRounds] = useState<RoundResult[]>([]);
+  const [animatedRound, setAnimatedRound] = useState(0);
+  const [status, setStatus] = useState("Loading proof duel from X Layer...");
+  const [settlement, setSettlement] = useState("Nigeria 3-0 France");
+
+  useEffect(() => {
+    async function loadReplay() {
+      try {
+        const receipt = await publicClient.getTransactionReceipt({ hash: PROOF_SETTLEMENT_TX });
+        const proofRounds: RoundResult[] = [];
+        for (const log of receipt.logs) {
+          if (log.address.toLowerCase() !== addresses.penaltyDuel?.toLowerCase()) continue;
+          try {
+            const decoded = decodeEventLog({ abi: penaltyDuelAbi, data: log.data, topics: [...log.topics] as any });
+            const args = decoded.args as any;
+            if (decoded.eventName === "RoundResolved") {
+              proofRounds.push({
+                round: Number(args.round),
+                youGoal: Boolean(args.p1Goal),
+                botGoal: Boolean(args.p2Goal),
+                p1Shot: Number(args.p1Shot),
+                p2Shot: Number(args.p2Shot),
+                p1Save: Number(args.p1Save),
+                p2Save: Number(args.p2Save),
+              });
+            }
+            if (decoded.eventName === "DuelSettled") {
+              setSettlement(`Nigeria ${Number(args.p1Score)}-${Number(args.p2Score)} France`);
+            }
+          } catch {
+            // Ignore non-Panenka logs.
+          }
+        }
+        setRounds(proofRounds.sort((a, b) => a.round - b.round));
+        setStatus(`Replay loaded from settlement tx ${short(PROOF_SETTLEMENT_TX)}.`);
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "Could not load proof duel.");
+      }
+    }
+    void loadReplay();
+  }, []);
+
+  useEffect(() => {
+    if (!rounds.length) {
+      setAnimatedRound(0);
+      return;
+    }
+    setAnimatedRound(1);
+    const timers = rounds.slice(1).map((_, index) => window.setTimeout(() => setAnimatedRound(index + 2), (index + 1) * 800));
+    return () => timers.forEach(window.clearTimeout);
+  }, [rounds]);
+
+  const currentRound = rounds[Math.max(animatedRound - 1, 0)];
+
+  return (
+    <section className="page replayPage">
+      <p className="eyebrow">Replay proof</p>
+      <h2>Watch the settled duel straight from X Layer logs.</h2>
+      <p className="lede compact">
+        This page does not need a wallet. It reads the proof settlement transaction, decodes every `RoundResolved` event,
+        and replays the five kicks judges can verify in the explorer.
+      </p>
+
+      <div className="statusPanel">
+        <span>X Layer {XLAYER_CHAIN_ID}</span>
+        <span>Duel #{PROOF_DUEL_ID}</span>
+        <strong>{status}</strong>
+        <a href={txLink(PROOF_SETTLEMENT_TX)} target="_blank" rel="noreferrer">Open proof tx</a>
+      </div>
+
+      <article className="replayArena">
+        <div className="replayScore">
+          <span>Nigeria</span>
+          <strong>{settlement.replace("Nigeria ", "").replace(" France", "")}</strong>
+          <span>France</span>
+        </div>
+        <div className="revealStage replayStageLarge">
+          <div className="miniGoal">
+            <div className={`miniKeeper keeper-${currentRound?.botGoal ? "wrong" : "save"}`}>GK</div>
+            <div className={`miniBall ball-${currentRound?.youGoal ? "goal" : "save"}`} />
+          </div>
+          <div>
+            <span>Round {animatedRound || 1} of 5</span>
+            <strong>{currentRound?.youGoal ? "Nigeria scores" : "France keeper saves"}</strong>
+            <p>
+              Shot {currentRound?.p1Shot ?? "-"} vs save {currentRound?.p2Save ?? "-"} · France shot {currentRound?.p2Shot ?? "-"} vs
+              Nigeria save {currentRound?.p1Save ?? "-"}
+            </p>
+          </div>
+        </div>
+        <div className="roundStrip">
+          {rounds.map((round) => (
+            <div className="roundChip" key={round.round}>
+              <span>Round {round.round}</span>
+              <strong>{round.youGoal ? "Nigeria goal" : "France save"} · {round.botGoal ? "France goal" : "Nigeria save"}</strong>
+            </div>
+          ))}
+        </div>
+        <div className="ctaRow">
+          <a className="primary" href="#play">Play your own duel</a>
+          <a className="secondary" href={shareResultUrl(`Panenka proof duel: ${settlement} on X Layer`)} target="_blank" rel="noreferrer">
+            Share proof result
+          </a>
+        </div>
+      </article>
+    </section>
+  );
+}
+
 function Leaderboard() {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [countryRows, setCountryRows] = useState<CountryLeaderboardRow[]>([]);
   const [status, setStatus] = useState("Loading live X Layer leaderboard...");
   const [latestBlock, setLatestBlock] = useState("");
 
@@ -878,8 +1015,9 @@ function Leaderboard() {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error ?? "Leaderboard failed.");
         setRows(body.rows ?? []);
+        setCountryRows(body.countryRows ?? []);
         setLatestBlock(body.latestBlock ?? "");
-        setStatus(body.rows?.length ? "Ranked from KickerMinted and KickerStatsUpdated events." : "No ranked kickers found in the scan window yet.");
+        setStatus(body.rows?.length ? `Ranked from ${body.source}.` : "No ranked kickers found yet.");
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "Could not load leaderboard.");
       }
@@ -896,7 +1034,29 @@ function Leaderboard() {
         {latestBlock ? <span>latest block {latestBlock}</span> : null}
         <strong>{status}</strong>
       </div>
+      <div className="table countryTable">
+        <div className="tableTitle">
+          <span>Country rivalry</span>
+          <strong>{countryRows.length} countries onchain</strong>
+        </div>
+        {countryRows.map((row, index) => (
+          <div className="rank countryRank" key={row.country}>
+            <span>#{index + 1}</span>
+            <strong>{row.country}</strong>
+            <span>{row.kickers} kickers</span>
+            <span>{row.wins} wins</span>
+            <span>{row.losses} losses</span>
+            <span>{row.streak} best streak</span>
+            <span>best #{row.bestTokenId}</span>
+          </div>
+        ))}
+        {!countryRows.length ? <p className="muted">Country totals appear after the first settled duel.</p> : null}
+      </div>
       <div className="table">
+        <div className="tableTitle">
+          <span>Kicker table</span>
+          <strong>{rows.length} ranked kickers</strong>
+        </div>
         {rows.map((row, index) => (
           <div className="rank" key={row.tokenId}>
             <span>#{index + 1}</span>

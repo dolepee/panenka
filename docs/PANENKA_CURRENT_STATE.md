@@ -7,6 +7,8 @@ Panenka is an onchain penalty shootout duel game for X Layer X Cup. It is positi
 ## Live Surfaces
 
 - App: `https://panenka-alpha.vercel.app`
+- Replay proof: `https://panenka-alpha.vercel.app/#replay`
+- Machine-readable proof: `https://panenka-alpha.vercel.app/api/proof`
 - X account: `https://x.com/PanenkaGG`
 - Repository: `https://github.com/dolepee/panenka`
 
@@ -55,6 +57,14 @@ Expected verifier marker:
 ```text
 PANENKA_DUEL_VALID
 ```
+
+## Current Upside Moves Added
+
+- Public replay route decodes `RoundResolved` and `DuelSettled` from the proof settlement transaction.
+- Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
+- Share links let players post settled results to X with `@XLayerOfficial` tagged.
+- Panenka Bot is capped to exhibition duels of `5 DCR` by default.
+- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, current activity counts, and verifier command.
 
 ## Intentional Scope Cuts
 
