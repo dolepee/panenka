@@ -79,6 +79,19 @@ type CountryLeaderboardRow = {
   streak: number;
   bestTokenId: string;
 };
+type ProofActivity = {
+  chain?: { name: string; latestBlock: string };
+  contracts?: { PenaltyDuel?: { address: string; explorer: string } };
+  onchainActivity?: {
+    mintedKickers: number;
+    settledDuels: number;
+    duelsCreated: number;
+    countryCount: number;
+  };
+  proofDuel?: {
+    transactions?: { playerTwoRevealAndSettle?: { explorer: string } };
+  };
+};
 
 const countries = [
   { id: 1, name: "Argentina" },
@@ -270,6 +283,28 @@ function App() {
 }
 
 function Home() {
+  const [proof, setProof] = useState<ProofActivity | null>(null);
+  const [proofStatus, setProofStatus] = useState("Loading live X Layer activity...");
+
+  useEffect(() => {
+    async function loadProof() {
+      try {
+        const response = await fetch("/api/proof");
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Proof API failed.");
+        setProof(body);
+        setProofStatus(`Live at block ${body.chain?.latestBlock ?? "unknown"}.`);
+      } catch (error) {
+        setProofStatus(error instanceof Error ? error.message : "Could not load live activity.");
+      }
+    }
+    void loadProof();
+  }, []);
+
+  const activity = proof?.onchainActivity;
+  const proofTx = proof?.proofDuel?.transactions?.playerTwoRevealAndSettle?.explorer;
+  const duelContract = proof?.contracts?.PenaltyDuel;
+
   return (
     <section className="hero">
       <div>
@@ -284,6 +319,22 @@ function Home() {
           <span>remote friend links</span>
           <span>onchain settlement</span>
         </div>
+        <article className="liveActivity">
+          <div>
+            <span>Live X Layer activity</span>
+            <strong>{proofStatus}</strong>
+          </div>
+          <div className="activityStats">
+            <span><strong>{activity?.mintedKickers ?? "-"}</strong> kickers minted</span>
+            <span><strong>{activity?.settledDuels ?? "-"}</strong> duels settled</span>
+            <span><strong>{activity?.countryCount ?? "-"}</strong> countries live</span>
+          </div>
+          <div className="activityLinks">
+            <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>
+            {duelContract ? <a href={duelContract.explorer} target="_blank" rel="noreferrer">Duel contract</a> : null}
+            {proofTx ? <a href={proofTx} target="_blank" rel="noreferrer">Proof tx</a> : null}
+          </div>
+        </article>
         <div className="ctaRow">
           <a className="primary" href="#play">Play the bot</a>
           <a className="secondary" href="#leaderboard">View leaderboard</a>

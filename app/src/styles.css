@@ -180,6 +180,79 @@ h2 {
   text-transform: uppercase;
 }
 
+.liveActivity {
+  display: grid;
+  gap: 14px;
+  max-width: 720px;
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid rgba(68, 244, 196, 0.2);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 4% 0%, rgba(68, 244, 196, 0.14), transparent 22rem),
+    radial-gradient(circle at 92% 20%, rgba(248, 255, 112, 0.1), transparent 18rem),
+    rgba(0, 0, 0, 0.22);
+}
+
+.liveActivity > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.liveActivity span {
+  color: rgba(248, 243, 231, 0.62);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.liveActivity strong {
+  color: #f8f3e7;
+}
+
+.activityStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.activityStats span {
+  display: grid;
+  gap: 5px;
+  min-height: 86px;
+  padding: 12px;
+  border: 1px solid rgba(248, 243, 231, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+  letter-spacing: 0.04em;
+}
+
+.activityStats strong {
+  color: #44f4c4;
+  font-size: 34px;
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+.activityLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.activityLinks a {
+  padding: 9px 11px;
+  border: 1px solid rgba(248, 255, 112, 0.2);
+  border-radius: 999px;
+  color: #f8ff70;
+  background: rgba(248, 255, 112, 0.06);
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .ctaRow {
   display: flex;
   gap: 14px;
@@ -820,6 +893,10 @@ h2 {
   }
 
   .roundStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .activityStats {
     grid-template-columns: 1fr;
   }
 

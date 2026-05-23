@@ -26,7 +26,10 @@ const chain = defineChain({
   rpcUrls: { default: { http: [XLAYER_RPC_URL] } },
 });
 
-const kickerAbi = parseAbi(["function nextTokenId() external view returns (uint256)"]);
+const kickerAbi = parseAbi([
+  "function nextTokenId() external view returns (uint256)",
+  "function statsOf(uint256 tokenId) external view returns (uint8 countryId, uint32 wins, uint32 losses, uint32 streak, uint32 level)",
+]);
 const duelAbi = parseAbi([
   "function nextDuelId() external view returns (uint256)",
   "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
@@ -74,6 +77,26 @@ export default async function handler(_: any, response: any) {
     client.getBytecode({ address: PENALTY_DUEL }),
     client.getTransactionReceipt({ hash: PROOF_TXS.playerTwoRevealAndSettle as `0x${string}` }),
   ]);
+  const kickerIds = Array.from({ length: Number((nextTokenId as bigint) - 1n) }, (_, index) => BigInt(index + 1));
+  const kickerStats = await Promise.all(
+    kickerIds.map(async (tokenId) => {
+      try {
+        const stats = await client.readContract({ address: KICKER_NFT, abi: kickerAbi, functionName: "statsOf", args: [tokenId] });
+        return {
+          tokenId: tokenId.toString(),
+          countryId: Number(stats[0]),
+          wins: Number(stats[1]),
+          losses: Number(stats[2]),
+          streak: Number(stats[3]),
+          level: Number(stats[4]),
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const readableKickers = kickerStats.filter(Boolean);
+  const countryIds = new Set(readableKickers.map((row) => row.countryId));
   const duelIds = Array.from({ length: Number((nextDuelId as bigint) - 1n) }, (_, index) => BigInt(index + 1));
   const duelReads = await Promise.all(
     duelIds.map(async (duelId) => {
@@ -139,6 +162,8 @@ export default async function handler(_: any, response: any) {
       drawSettlements: settledDuels.filter((duel) => duel.draw).length,
       statusCounts,
       proofFromBlock: PROOF_FROM_BLOCK.toString(),
+      countryCount: countryIds.size,
+      indexedKickers: readableKickers.length,
     },
     recentDuels: duels.slice(-8).reverse(),
     proofDuel: {
