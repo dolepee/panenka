@@ -90,6 +90,15 @@ npm run duel:xlayer
 
 That script claims DuelCredit when possible, mints two kickers if needed, creates a duel, joins it, reveals both plans, and settles the match onchain.
 
+Create exhibition activity for the final submission:
+
+```bash
+set -a && source .env && set +a
+npm run exhibition:run
+```
+
+The exhibition runner derives deterministic test wallets from `EXHIBITION_SEED`, funds them from `EXHIBITION_FUNDER_PRIVATE_KEY` or `DEPLOYER_PRIVATE_KEY`, rotates countries, settles multiple duels, and prints `PANENKA_EXHIBITION_VALID`. Use it to build visible X Layer activity before recording the final demo.
+
 Frontend:
 
 ```bash

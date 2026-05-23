@@ -65,6 +65,14 @@ PANENKA_DUEL_VALID
 - Share links let players post settled results to X with `@XLayerOfficial` tagged.
 - Panenka Bot is capped to exhibition duels of `5 DCR` by default.
 - `/api/proof` gives AI judges one JSON surface for contracts, proof txs, current activity counts, and verifier command.
+- `npm run exhibition:run` can create real pre-submission activity with deterministic funded test wallets, country rotation, and multiple settled duels.
+
+## Activity Target Before Final Demo
+
+- At least `20` settled duels.
+- At least `8` country kickers.
+- At least `8` countries visible in the country leaderboard.
+- At least `3` public X posts showing rivalry results and tagging `@XLayerOfficial`.
 
 ## Intentional Scope Cuts
 
