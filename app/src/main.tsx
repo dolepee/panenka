@@ -897,15 +897,39 @@ function Play({
         }
         if (decoded.eventName !== "DuelSettled") continue;
         const args = decoded.args as any;
+        const duelId = BigInt(args.duelId);
         const p1Score = Number(args.p1Score);
         const p2Score = Number(args.p2Score);
         const winner = args.draw ? "Draw" : short(args.winner);
-        setSettlementText(args.draw ? `Duel #${args.duelId} settled as a ${p1Score}-${p2Score} draw.` : `Duel #${args.duelId} settled: ${winner} won ${p1Score}-${p2Score}.`);
+        setSettlementText(args.draw ? `Duel #${duelId} settled as a ${p1Score}-${p2Score} draw.` : `Duel #${duelId} settled: ${winner} won ${p1Score}-${p2Score}.`);
+        void enrichSettlementText(duelId, args.winner, p1Score, p2Score, Boolean(args.draw));
       } catch {
         // Ignore non-Panenka logs in the same transaction.
       }
     }
     if (rounds.length) setRoundResults(rounds.sort((a, b) => a.round - b.round));
+  }
+
+  async function enrichSettlementText(duelId: bigint, winner: `0x${string}`, p1Score: number, p2Score: number, draw: boolean) {
+    try {
+      const duel = (await publicClient.readContract({
+        address: addresses.penaltyDuel!,
+        abi: penaltyDuelAbi,
+        functionName: "getDuel",
+        args: [duelId],
+      })) as any;
+      const [p1Stats, p2Stats] = await Promise.all([
+        publicClient.readContract({ address: addresses.kickerNft!, abi: kickerNftAbi, functionName: "statsOf", args: [duel.p1.kickerTokenId] }),
+        publicClient.readContract({ address: addresses.kickerNft!, abi: kickerNftAbi, functionName: "statsOf", args: [duel.p2.kickerTokenId] }),
+      ]);
+      const p1Country = countryById[Number((p1Stats as readonly unknown[])[0])] ?? `Country ${(p1Stats as readonly unknown[])[0]}`;
+      const p2Country = countryById[Number((p2Stats as readonly unknown[])[0])] ?? `Country ${(p2Stats as readonly unknown[])[0]}`;
+      const winnerCountry = winner.toLowerCase() === duel.p1.player.toLowerCase() ? p1Country : p2Country;
+      const result = `${p1Country} ${p1Score}-${p2Score} ${p2Country}`;
+      setSettlementText(draw ? `Duel #${duelId}: ${result} draw on X Layer.` : `Duel #${duelId}: ${result}. Winner: ${winnerCountry}.`);
+    } catch {
+      // The wallet-visible settlement text above is still valid if an RPC read races indexing.
+    }
   }
 
   async function callBot(action: "join" | "reveal") {
