@@ -66,9 +66,9 @@ async function main() {
   }
 
   const activity = proof.onchainActivity;
-  assertOk((activity?.mintedKickers ?? 0) >= 14, `too few kickers minted: ${activity?.mintedKickers ?? 0}`);
-  assertOk((activity?.duelsCreated ?? 0) >= 22, `too few duels created: ${activity?.duelsCreated ?? 0}`);
-  assertOk((activity?.settledDuels ?? 0) >= 21, `too few settled duels: ${activity?.settledDuels ?? 0}`);
+  assertOk((activity?.mintedKickers ?? 0) >= 20, `too few kickers minted: ${activity?.mintedKickers ?? 0}`);
+  assertOk((activity?.duelsCreated ?? 0) >= 31, `too few duels created: ${activity?.duelsCreated ?? 0}`);
+  assertOk((activity?.settledDuels ?? 0) >= 30, `too few settled duels: ${activity?.settledDuels ?? 0}`);
   assertOk((activity?.countryCount ?? 0) >= 8, `too few countries represented: ${activity?.countryCount ?? 0}`);
 
   const latestSettled = proof.recentDuels?.find((duel) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country);

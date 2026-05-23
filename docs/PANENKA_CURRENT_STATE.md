@@ -66,11 +66,13 @@ The authoritative live values are returned by `https://panenka-alpha.vercel.app/
 
 Last verified pre-submission snapshot on 2026-05-23:
 
-- `14` country kickers minted.
-- `22` duels created.
-- `21` duels settled.
+- `20` country kickers minted.
+- `31` duels created.
+- `30` duels settled.
 - `8` countries represented in the country leaderboard.
 - `3` level-2 kickers from repeated onchain wins.
+- Latest settled duel: `#31`, France `5-0` Argentina.
+- Latest settlement tx: `0xe6c8a0038c113243191d03820d0742ab123a045c42bd3d9270a8ff0c25f5ecae`.
 
 Treat the live endpoints as canonical if this snapshot is lower than the current app.
 
@@ -91,9 +93,10 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 
 ## Activity Target Before Final Demo
 
-- At least `20` settled duels. Achieved: `21`.
-- At least `8` country kickers. Achieved: `14`.
+- At least `30` settled duels. Achieved: `30`.
+- At least `20` country kickers. Achieved: `20`.
 - At least `8` countries visible in the country leaderboard. Achieved: `8`.
+- At least `5` external tester wallets. Pending; collect through the local tester campaign.
 - At least `3` public X posts showing rivalry results and tagging `@XLayerOfficial`.
 
 ## Intentional Scope Cuts
