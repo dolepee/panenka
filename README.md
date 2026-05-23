@@ -12,6 +12,8 @@ Project X account: `https://x.com/PanenkaGG`
 
 Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
 
+Current live X Layer activity: `14` country kickers minted, `21` duels created, `20` duels settled, and all `8` country slots represented in the leaderboard. The live counts are returned by `/api/proof` and `/api/leaderboard`.
+
 ## What Is Built
 
 - `DuelCredit`: non-transferable in-game credit with a daily faucet and duel-only transfer route.

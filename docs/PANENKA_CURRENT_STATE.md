@@ -58,6 +58,18 @@ Expected verifier marker:
 PANENKA_DUEL_VALID
 ```
 
+## Live Activity Snapshot
+
+As of 2026-05-23, the live X Layer testnet deployment has:
+
+- `14` country kickers minted.
+- `21` duels created.
+- `20` duels settled.
+- `8` countries represented in the country leaderboard.
+- `3` level-2 kickers from repeated onchain wins.
+
+The authoritative live values are returned by `https://panenka-alpha.vercel.app/api/proof` and `https://panenka-alpha.vercel.app/api/leaderboard`.
+
 ## Current Upside Moves Added
 
 - Public replay route decodes `RoundResolved` and `DuelSettled` from the proof settlement transaction.
@@ -69,9 +81,9 @@ PANENKA_DUEL_VALID
 
 ## Activity Target Before Final Demo
 
-- At least `20` settled duels.
-- At least `8` country kickers.
-- At least `8` countries visible in the country leaderboard.
+- At least `20` settled duels. Achieved: `20`.
+- At least `8` country kickers. Achieved: `14`.
+- At least `8` countries visible in the country leaderboard. Achieved: `8`.
 - At least `3` public X posts showing rivalry results and tagging `@XLayerOfficial`.
 
 ## Intentional Scope Cuts
