@@ -85,7 +85,7 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 - Hero duel card links directly to replay, X sharing, and the latest settlement transaction.
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
 - Country leaderboard rows include X challenge links for shareable rivalry posts.
-- Share links let players post settled results to X with `@XLayerOfficial` tagged.
+- Share links let players post settled results to X with `@PanenkaGG`, `@XLayerOfficial`, and `#XLayerHackathon` included.
 - Settled duel screen includes a copyable tester report so real testers can send back result and settlement tx quickly.
 - Panenka Bot is capped to public exhibition duels of `1 DCR` by default so the one-wallet demo path stays reliable during public testing.
 - `GET /api/bot-opponent` exposes Panenka Bot readiness, public stake cap, DCR balance, gas, allowance coverage, and kicker status.
