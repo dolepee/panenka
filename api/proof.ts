@@ -35,6 +35,16 @@ const duelAbi = parseAbi([
   "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
 ]);
 const statusLabels = ["Open", "Committed", "Settled", "Cancelled", "Forfeited"];
+const countries: Record<number, string> = {
+  1: "Argentina",
+  2: "Brazil",
+  3: "France",
+  4: "Nigeria",
+  5: "Japan",
+  6: "England",
+  7: "Morocco",
+  8: "USA",
+};
 
 function addressUrl(address: string) {
   return `${XLAYER_EXPLORER}/address/${address}`;
@@ -96,6 +106,7 @@ export default async function handler(_: any, response: any) {
     }),
   );
   const readableKickers = kickerStats.filter(Boolean);
+  const kickerById = Object.fromEntries(readableKickers.map((row) => [row.tokenId, row]));
   const countryIds = new Set(readableKickers.map((row) => row.countryId));
   const duelIds = Array.from({ length: Number((nextDuelId as bigint) - 1n) }, (_, index) => BigInt(index + 1));
   const duelReads = await Promise.all(
@@ -105,6 +116,10 @@ export default async function handler(_: any, response: any) {
         const status = Number(field(state, "status", 4));
         const p1 = field(state, "p1", 5);
         const p2 = field(state, "p2", 6);
+        const p1KickerTokenId = field(p1, "kickerTokenId", 1)?.toString?.() ?? "0";
+        const p2KickerTokenId = field(p2, "kickerTokenId", 1)?.toString?.() ?? "0";
+        const p1Kicker = kickerById[p1KickerTokenId];
+        const p2Kicker = kickerById[p2KickerTokenId];
         const score = status === 2 ? scoreDuel(state) : null;
         return {
           duelId: duelId.toString(),
@@ -112,6 +127,10 @@ export default async function handler(_: any, response: any) {
           statusLabel: statusLabels[status] ?? `Status ${status}`,
           playerOne: field(p1, "player", 0),
           playerTwo: field(p2, "player", 0),
+          p1KickerTokenId,
+          p2KickerTokenId,
+          p1Country: countries[p1Kicker?.countryId] ?? null,
+          p2Country: countries[p2Kicker?.countryId] ?? null,
           p1Revealed: Boolean(field(p1, "revealed", 3)),
           p2Revealed: Boolean(field(p2, "revealed", 3)),
           score: score ? `${score.p1Score}-${score.p2Score}` : null,

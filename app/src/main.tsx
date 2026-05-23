@@ -943,15 +943,71 @@ function Play({
   );
 }
 
+function roundsFromDuelState(duel: any) {
+  const rounds: RoundResult[] = [];
+  let p1Score = 0;
+  let p2Score = 0;
+  for (let index = 0; index < 5; index++) {
+    const p1Shot = Number(duel.p1.shots[index]);
+    const p1Save = Number(duel.p1.saves[index]);
+    const p2Shot = Number(duel.p2.shots[index]);
+    const p2Save = Number(duel.p2.saves[index]);
+    const p1Goal = p1Shot !== p2Save;
+    const p2Goal = p2Shot !== p1Save;
+    if (p1Goal) p1Score += 1;
+    if (p2Goal) p2Score += 1;
+    rounds.push({
+      round: index + 1,
+      youGoal: p1Goal,
+      botGoal: p2Goal,
+      p1Shot,
+      p2Shot,
+      p1Save,
+      p2Save,
+    });
+  }
+  return { rounds, score: `${p1Score}-${p2Score}` };
+}
+
 function Replay() {
   const [rounds, setRounds] = useState<RoundResult[]>([]);
   const [animatedRound, setAnimatedRound] = useState(0);
-  const [status, setStatus] = useState("Loading proof duel from X Layer...");
-  const [settlement, setSettlement] = useState("Nigeria 3-0 France");
+  const [status, setStatus] = useState("Loading latest settled duel from X Layer...");
+  const [score, setScore] = useState("3-0");
+  const [sideOne, setSideOne] = useState("Nigeria");
+  const [sideTwo, setSideTwo] = useState("France");
+  const [replayDuelId, setReplayDuelId] = useState(String(PROOF_DUEL_ID));
+  const [proofHref, setProofHref] = useState(txLink(PROOF_SETTLEMENT_TX));
+  const [proofLabel, setProofLabel] = useState("Open proof tx");
 
   useEffect(() => {
     async function loadReplay() {
       try {
+        const proofResponse = await fetch("/api/proof");
+        const proofBody = await proofResponse.json();
+        if (!proofResponse.ok) throw new Error(proofBody.error ?? "Proof API failed.");
+        const latest = (proofBody.recentDuels ?? []).find(
+          (duel: any) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country,
+        );
+        if (latest) {
+          const duel = (await publicClient.readContract({
+            address: addresses.penaltyDuel!,
+            abi: penaltyDuelAbi,
+            functionName: "getDuel",
+            args: [BigInt(latest.duelId)],
+          })) as any;
+          const replay = roundsFromDuelState(duel);
+          setRounds(replay.rounds);
+          setScore(replay.score);
+          setSideOne(latest.p1Country);
+          setSideTwo(latest.p2Country);
+          setReplayDuelId(latest.duelId);
+          setProofHref("/api/proof");
+          setProofLabel("Open proof API");
+          setStatus(`Latest settled duel #${latest.duelId} loaded from X Layer state at block ${proofBody.chain?.latestBlock ?? "unknown"}.`);
+          return;
+        }
+
         const receipt = await publicClient.getTransactionReceipt({ hash: PROOF_SETTLEMENT_TX });
         const proofRounds: RoundResult[] = [];
         for (const log of receipt.logs) {
@@ -971,7 +1027,7 @@ function Replay() {
               });
             }
             if (decoded.eventName === "DuelSettled") {
-              setSettlement(`Nigeria ${Number(args.p1Score)}-${Number(args.p2Score)} France`);
+              setScore(`${Number(args.p1Score)}-${Number(args.p2Score)}`);
             }
           } catch {
             // Ignore non-Panenka logs.
@@ -1001,24 +1057,24 @@ function Replay() {
   return (
     <section className="page replayPage">
       <p className="eyebrow">Replay proof</p>
-      <h2>Watch the settled duel straight from X Layer logs.</h2>
+      <h2>Watch a settled duel straight from X Layer.</h2>
       <p className="lede compact">
-        This page does not need a wallet. It reads the proof settlement transaction, decodes every `RoundResolved` event,
-        and replays the five kicks judges can verify in the explorer.
+        This page does not need a wallet. It loads the latest settled duel from live contract state, reconstructs the five
+        kicks, and falls back to the original proof transaction if the live feed is unavailable.
       </p>
 
       <div className="statusPanel">
         <span>X Layer {XLAYER_CHAIN_ID}</span>
-        <span>Duel #{PROOF_DUEL_ID}</span>
+        <span>Duel #{replayDuelId}</span>
         <strong>{status}</strong>
-        <a href={txLink(PROOF_SETTLEMENT_TX)} target="_blank" rel="noreferrer">Open proof tx</a>
+        <a href={proofHref} target="_blank" rel="noreferrer">{proofLabel}</a>
       </div>
 
       <article className="replayArena">
         <div className="replayScore">
-          <span>Nigeria</span>
-          <strong>{settlement.replace("Nigeria ", "").replace(" France", "")}</strong>
-          <span>France</span>
+          <span>{sideOne}</span>
+          <strong>{score}</strong>
+          <span>{sideTwo}</span>
         </div>
         <div className="revealStage replayStageLarge">
           <div className="miniGoal">
@@ -1027,10 +1083,10 @@ function Replay() {
           </div>
           <div>
             <span>Round {animatedRound || 1} of 5</span>
-            <strong>{currentRound?.youGoal ? "Nigeria scores" : "France keeper saves"}</strong>
+            <strong>{currentRound?.youGoal ? `${sideOne} scores` : `${sideTwo} keeper saves`}</strong>
             <p>
-              Shot {currentRound?.p1Shot ?? "-"} vs save {currentRound?.p2Save ?? "-"} · France shot {currentRound?.p2Shot ?? "-"} vs
-              Nigeria save {currentRound?.p1Save ?? "-"}
+              Shot {currentRound?.p1Shot ?? "-"} vs save {currentRound?.p2Save ?? "-"} · {sideTwo} shot{" "}
+              {currentRound?.p2Shot ?? "-"} vs {sideOne} save {currentRound?.p1Save ?? "-"}
             </p>
           </div>
         </div>
@@ -1038,13 +1094,13 @@ function Replay() {
           {rounds.map((round) => (
             <div className="roundChip" key={round.round}>
               <span>Round {round.round}</span>
-              <strong>{round.youGoal ? "Nigeria goal" : "France save"} · {round.botGoal ? "France goal" : "Nigeria save"}</strong>
+              <strong>{round.youGoal ? `${sideOne} goal` : `${sideTwo} save`} · {round.botGoal ? `${sideTwo} goal` : `${sideOne} save`}</strong>
             </div>
           ))}
         </div>
         <div className="ctaRow">
           <a className="primary" href="#play">Play your own duel</a>
-          <a className="secondary" href={shareResultUrl(`Panenka proof duel: ${settlement} on X Layer`)} target="_blank" rel="noreferrer">
+          <a className="secondary" href={shareResultUrl(`Panenka duel #${replayDuelId}: ${sideOne} ${score} ${sideTwo} on X Layer`)} target="_blank" rel="noreferrer">
             Share proof result
           </a>
         </div>
