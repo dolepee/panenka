@@ -89,7 +89,7 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 - Settled duel screen includes a copyable tester report so real testers can send back result and settlement tx quickly.
 - Panenka Bot is capped to public exhibition duels of `1 DCR` by default so the one-wallet demo path stays reliable during public testing.
 - `GET /api/bot-opponent` exposes Panenka Bot readiness, public stake cap, DCR balance, gas, allowance coverage, and kicker status.
-- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, active wallets, settled/open/draw duel counts, recent duel states, recent settlement tx links, and verifier command.
+- `/api/proof` gives AI judges one JSON surface for X Cup track fit, game-not-gamble safety boundaries, demo path, judge signals, contracts, proof txs, active wallets, settled/open/draw duel counts, recent duel states, recent settlement tx links, and verifier command.
 - `npm run exhibition:run` can create real pre-submission activity with deterministic funded test wallets, country rotation, and multiple settled duels.
 
 ## Activity Target Before Final Demo

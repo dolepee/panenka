@@ -38,7 +38,7 @@ Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard`
 - Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
 - Country leaderboard rows include X challenge links so the World Cup rivalry loop can spread from each onchain result.
 - Settled duel screen includes a copyable tester report with result, tx link, and app URL.
-- Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, settled/open/draw duel counts, recent duels, recent settlement tx links, and verifier marker.
+- Machine-readable `/api/proof` endpoint for AI judges: X Cup track fit, game-not-gamble safety boundaries, demo path, contracts, proof txs, settled/open/draw duel counts, recent duels, recent settlement tx links, and verifier marker.
 
 ## X Layer Testnet Proof
 

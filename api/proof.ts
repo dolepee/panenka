@@ -224,6 +224,27 @@ export default async function handler(_: any, response: any) {
     app: "https://panenka-alpha.vercel.app",
     repository: "https://github.com/dolepee/panenka",
     xAccount: "https://x.com/PanenkaGG",
+    submission: {
+      hackathon: "OKX X Layer Build X Hackathon / X Cup",
+      primaryTracks: ["GameFi", "NFT", "Social"],
+      theme: "World Cup penalty shootout duel game",
+      demoPath: [
+        "mint a country kicker",
+        "claim non-transferable DuelCredit",
+        "create a 1 DCR bot duel",
+        "commit hidden shots and saves",
+        "reveal both plans",
+        "settle best-of-five on X Layer",
+        "update NFT stats and country leaderboard",
+      ],
+      safetyPositioning: {
+        gameNotGamble: true,
+        noRealMoneyBetting: true,
+        noOfficialWorldCupOrFifaBranding: true,
+        noPlayerLikenesses: true,
+        noOracleOrLiveMatchFeed: true,
+      },
+    },
     chain: {
       name: chain.name,
       chainId: XLAYER_CHAIN_ID,
@@ -254,6 +275,14 @@ export default async function handler(_: any, response: any) {
       countryCount: countryIds.size,
       indexedKickers: readableKickers.length,
       activeWallets: activeWallets.size,
+    },
+    judgeSignals: {
+      innovation: "Penalty shootout as a hidden-plan commit/reveal game instead of another prediction market.",
+      marketPotential: "Country kickers, country leaderboard, X result sharing, and one-wallet bot duels create repeatable World Cup fan activity.",
+      completion: "Live app, X Layer contracts, one-wallet bot path, latest replay, leaderboard, and machine-readable proof endpoint are all deployed.",
+      xLayerUsage: "Minting, faucet claims, duel creation, joins, reveals, settlement, DuelCredit movement, and KickerNFT stat updates happen on X Layer testnet.",
+      onchainVerifiability: "Recent duels include settlement transaction links, and npm run verify:duel / npm run verify:live replay the proof trail.",
+      safety: "Non-transferable in-game DuelCredit only; no real-money betting, no official branding, no player likenesses, no live-match oracle.",
     },
     recentDuels: duels.slice(-8).reverse(),
     proofDuel: {
