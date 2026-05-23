@@ -4,6 +4,8 @@ import {
   createWalletClient,
   defineChain,
   encodeAbiParameters,
+  formatEther,
+  formatUnits,
   http,
   keccak256,
   maxUint256,
@@ -31,6 +33,7 @@ const creditAbi = parseAbi([
   "function claimFaucet() external",
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function allowance(address owner, address spender) external view returns (uint256)",
+  "function balanceOf(address account) external view returns (uint256)",
 ]);
 
 const kickerAbi = parseAbi([
@@ -134,11 +137,34 @@ export default async function handler(request: any, response: any) {
         response.status(400).json({ error: "Panenka Bot only joins exhibition duels up to 5 DCR." });
         return;
       }
+      const stake = duel.stake as bigint;
+      const gasBalance = await publicClient.getBalance({ address: bot.address });
+      if (gasBalance < 1_000_000_000_000_000n) {
+        response.status(503).json({
+          error: `Panenka Bot gas is low (${formatEther(gasBalance)} OKB). Try again later or use a second wallet.`,
+        });
+        return;
+      }
 
       const faucetTx = await tryWrite(() =>
         walletClient.writeContract({ address: DUEL_CREDIT, abi: creditAbi, functionName: "claimFaucet" }),
       );
       if (faucetTx) setupTxs.push(faucetTx);
+      const botCreditBalance = (await publicClient.readContract({
+        address: DUEL_CREDIT,
+        abi: creditAbi,
+        functionName: "balanceOf",
+        args: [bot.address],
+      })) as bigint;
+      if (botCreditBalance < stake) {
+        response.status(503).json({
+          error: `Panenka Bot has ${formatUnits(botCreditBalance, 18)} DCR available and needs ${formatUnits(
+            stake,
+            18,
+          )} DCR. Try a smaller exhibition stake or use a second wallet.`,
+        });
+        return;
+      }
 
       let tokenId = (await publicClient.readContract({
         address: KICKER_NFT,
@@ -165,7 +191,7 @@ export default async function handler(request: any, response: any) {
         functionName: "allowance",
         args: [bot.address, PENALTY_DUEL],
       })) as bigint;
-      if (allowance === 0n) {
+      if (allowance < stake) {
         const approveTx = await wait(
           await walletClient.writeContract({
             address: DUEL_CREDIT,

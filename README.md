@@ -22,7 +22,7 @@ Current live X Layer activity: `14` country kickers minted, `21` duels created, 
 - Foundry tests covering the full duel lifecycle and failure cases.
 - X Layer testnet deployment and first two-wallet duel proof.
 - Server-side Panenka Bot endpoint for one-wallet testing.
-- Replay page decodes the proof duel directly from X Layer settlement logs.
+- Replay page loads the latest settled duel from live X Layer state, with the proof duel as a fallback.
 - Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
 - Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, settled/open/draw duel counts, recent duels, and verifier marker.
 
@@ -137,7 +137,7 @@ These events are the judge-facing proof: a duel has two players, both commits ar
 
 Fast judge path:
 
-1. Open `https://panenka-alpha.vercel.app/#replay` to watch the settled proof duel from X Layer logs without a wallet.
+1. Open `https://panenka-alpha.vercel.app/#replay` to watch the latest settled X Layer duel without a wallet.
 2. Open `https://panenka-alpha.vercel.app/#leaderboard` to see country rivalry and kicker rankings read from `KickerNFT`.
 3. Open `https://panenka-alpha.vercel.app/api/proof` for machine-readable X Layer proof and `npm run verify:duel` for repo replay.
 

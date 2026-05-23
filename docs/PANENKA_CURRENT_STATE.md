@@ -72,7 +72,7 @@ The authoritative live values are returned by `https://panenka-alpha.vercel.app/
 
 ## Current Upside Moves Added
 
-- Public replay route decodes `RoundResolved` and `DuelSettled` from the proof settlement transaction.
+- Public replay route loads the latest settled duel from live X Layer state, with the proof settlement transaction as a fallback.
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
 - Share links let players post settled results to X with `@XLayerOfficial` tagged.
 - Panenka Bot is capped to exhibition duels of `5 DCR` by default.
