@@ -665,10 +665,20 @@ h2 {
   font-size: 22px;
 }
 
-.settlementCard a {
+.settlementCard a,
+.settlementCard button {
   width: fit-content;
+  border: 0;
   color: #83ffe3;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
   font-weight: 900;
+}
+
+.settlementCard button {
+  padding: 0;
+  color: #f8ff70;
 }
 
 .revealStage {

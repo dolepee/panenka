@@ -906,6 +906,26 @@ function Play({
     }
   }
 
+  async function copyTesterReport() {
+    if (!settlementText) {
+      notify("Settle a duel first, then copy the tester report.");
+      return;
+    }
+    const report = [
+      settlementText,
+      lastTx ? `Settlement tx: ${txLink(lastTx)}` : null,
+      `App: ${location.origin}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    try {
+      await navigator.clipboard?.writeText(report);
+      notify("Tester report copied. Send it back with your screenshot.");
+    } catch {
+      notify("Tester report ready. Copy the settlement text and tx link from this screen.");
+    }
+  }
+
   return (
     <section className="page">
       <p className="eyebrow">Play path</p>
@@ -976,6 +996,7 @@ function Play({
           ) : null}
           {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">Open settlement tx</a> : null}
           <a href={shareResultUrl(settlementText)} target="_blank" rel="noreferrer">Share result on X</a>
+          <button onClick={copyTesterReport}>Copy tester report</button>
         </article>
       ) : null}
 

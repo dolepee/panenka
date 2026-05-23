@@ -29,6 +29,7 @@ Current live X Layer activity: `14` country kickers minted, `22` duels created, 
 - Replay page loads the latest settled duel from live X Layer state, with the proof duel as a fallback.
 - Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
 - Country leaderboard rows include X challenge links so the World Cup rivalry loop can spread from each onchain result.
+- Settled duel screen includes a copyable tester report with result, tx link, and app URL.
 - Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, settled/open/draw duel counts, recent duels, recent settlement tx links, and verifier marker.
 
 ## X Layer Testnet Proof
