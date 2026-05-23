@@ -18,9 +18,19 @@ const PROOF_TXS = {
   playerOneReveal: "0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51",
   playerTwoRevealAndSettle: "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b",
 };
+const RECENT_LOG_LOOKBACK_BLOCKS = 10_000n;
 const KNOWN_SETTLEMENT_TXS: Record<string, string> = {
   [PROOF_DUEL_ID]: PROOF_TXS.playerTwoRevealAndSettle,
   "22": "0x7a08f732edf8681145a2ded33b19da83c7e5dedabc98fdf6493a38f6055622cb",
+  "23": "0x6db1104e367b756edb5d99ca146de0efae4aecccba68a77b4a492b30860087db",
+  "24": "0xed30f880cbd26691fad621a9e520a5fe9b901e1be8a45def2245408f3792cc02",
+  "25": "0xc7aae92391488f74846ae2c5c83bd3bf8ca964371b68186d7d6e4306edc33d72",
+  "26": "0x791bbfeea7a7e7426f845c4306421c0e824f4b00df7505a131b39280d19d407c",
+  "27": "0xd722d4b657649702aa75d6488b9607f32078fe9472fab0d5af5be53c63ff9d7a",
+  "28": "0x962f4ebe93e725e5ff8f2a747f2f87eda97231598ff8d3e0b09caab40bd99275",
+  "29": "0x8dd791767189608ad845e8e5130e6491ea118a145da1d11ba65b1137d5b0fbc1",
+  "30": "0xb45e5bd1d66eef3985af1c4f8aa491a69214d210ae7bebf1ceb8a42826a84c62",
+  "31": "0xe6c8a0038c113243191d03820d0742ab123a045c42bd3d9270a8ff0c25f5ecae",
 };
 
 const chain = defineChain({
@@ -85,31 +95,6 @@ function scoreDuel(duel: any) {
   return { p1Score, p2Score, draw: p1Score === p2Score, rounds };
 }
 
-async function getSettlementLogs(client: ReturnType<typeof createPublicClient>, fromBlock: bigint, toBlock: bigint) {
-  const logs: any[] = [];
-  async function collect(from: bigint, to: bigint) {
-    if (from > to) return;
-    try {
-      logs.push(
-        ...(await client.getLogs({
-          address: PENALTY_DUEL,
-          event: settledEvent,
-          fromBlock: from,
-          toBlock: to,
-        })),
-      );
-      return;
-    } catch {
-      if (from === to) return;
-      const midpoint = from + (to - from) / 2n;
-      await collect(from, midpoint);
-      await collect(midpoint + 1n, to);
-    }
-  }
-  await collect(fromBlock, toBlock);
-  return logs;
-}
-
 export default async function handler(_: any, response: any) {
   const client = createPublicClient({ chain, transport: http(XLAYER_RPC_URL) });
   const [latestBlock, nextTokenId, nextDuelId, code, proofReceipt] = await Promise.all([
@@ -153,7 +138,16 @@ export default async function handler(_: any, response: any) {
       ]),
     );
   try {
-    const settlementLogs = await getSettlementLogs(client, PROOF_FROM_BLOCK, latestBlock);
+    const fromBlock =
+      latestBlock > RECENT_LOG_LOOKBACK_BLOCKS
+        ? latestBlock - RECENT_LOG_LOOKBACK_BLOCKS
+        : PROOF_FROM_BLOCK;
+    const settlementLogs = await client.getLogs({
+      address: PENALTY_DUEL,
+      event: settledEvent,
+      fromBlock: fromBlock > PROOF_FROM_BLOCK ? fromBlock : PROOF_FROM_BLOCK,
+      toBlock: latestBlock,
+    });
     settlementByDuelId = {
       ...settlementByDuelId,
       ...Object.fromEntries(
