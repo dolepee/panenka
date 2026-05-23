@@ -1,0 +1,21 @@
+<svg width="1500" height="500" viewBox="0 0 1500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="500" fill="#05070A"/>
+  <rect width="1500" height="500" fill="url(#bg)"/>
+  <g opacity="0.24">
+    <path d="M0 96h1500M0 192h1500M0 288h1500M0 384h1500M150 0v500M300 0v500M450 0v500M600 0v500M750 0v500M900 0v500M1050 0v500M1200 0v500M1350 0v500" stroke="#F8F3E7" stroke-width="1"/>
+  </g>
+  <path d="M930 125h350v120" stroke="#F8F3E7" stroke-width="8" opacity="0.76"/>
+  <circle cx="1214" cy="305" r="30" fill="#F8F3E7"/>
+  <path d="M1194 305c78-27 129-80 157-159" stroke="#44F4C4" stroke-width="16" stroke-linecap="round"/>
+  <rect x="1050" y="210" width="88" height="88" rx="26" fill="#F8FF70" transform="rotate(-17 1050 210)"/>
+  <text x="92" y="190" fill="#F8F3E7" font-family="Inter, Arial, sans-serif" font-size="92" font-weight="900" letter-spacing="-5">Panenka</text>
+  <text x="96" y="260" fill="#44F4C4" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="800" letter-spacing="7">ONCHAIN PENALTY DUELS</text>
+  <text x="96" y="327" fill="#B9C2C9" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500">Commit hidden shots. Reveal the moment. Settle on X Layer.</text>
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(245 120) rotate(22) scale(770 440)">
+      <stop stop-color="#12394A"/>
+      <stop offset="0.52" stop-color="#07131D"/>
+      <stop offset="1" stop-color="#0C1007"/>
+    </radialGradient>
+  </defs>
+</svg>
