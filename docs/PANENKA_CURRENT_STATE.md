@@ -77,6 +77,7 @@ The authoritative live values are returned by `https://panenka-alpha.vercel.app/
 - Public replay route loads the latest settled duel from live X Layer state, with the proof settlement transaction as a fallback.
 - Homepage playable-now card surfaces Panenka Bot readiness, public DCR cap, and bot fuel before a tester clicks into the play flow.
 - Homepage country race surfaces the top live countries from `KickerNFT` stats so judges see the rivalry loop before opening the leaderboard.
+- Hero duel card links directly to replay, X sharing, and the latest settlement transaction.
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
 - Country leaderboard rows include X challenge links for shareable rivalry posts.
 - Share links let players post settled results to X with `@XLayerOfficial` tagged.

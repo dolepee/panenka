@@ -370,6 +370,7 @@ function Home() {
   const heroSideTwo = latestSettledDuel?.p2Country ?? "France";
   const heroScore = latestSettledDuel?.score ?? "3-0";
   const [heroSideOneScore, heroSideTwoScore] = heroScore.split("-");
+  const heroShareText = `Panenka duel #${heroDuelId}: ${heroSideOne} ${heroScore} ${heroSideTwo} on X Layer`;
 
   return (
     <section className="hero">
@@ -465,6 +466,11 @@ function Home() {
           <span>{heroSideTwo}</span>
         </div>
         <div className="heroTx">latest settled duel · {activity?.settledDuels ?? 20} total settlements · NFT stats updated</div>
+        <div className="heroDuelActions">
+          <a href="#replay">Replay this duel</a>
+          <a href={shareResultUrl(heroShareText)} target="_blank" rel="noreferrer">Share result</a>
+          {proofTx ? <a href={proofTx} target="_blank" rel="noreferrer">Open tx</a> : null}
+        </div>
       </div>
     </section>
   );
