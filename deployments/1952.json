@@ -6,5 +6,26 @@
     "duelCredit": "0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98",
     "kickerNft": "0x33dc85f938f21c8cf83556f444d16e61377a35a3",
     "penaltyDuel": "0xebd15b2baa79a84d6e509b2dae12526abe5dacdb"
+  },
+  "proof": {
+    "duelId": "1",
+    "fromBlock": "31033500",
+    "playerOne": "0x648C200356146f35beE46d59990F07eD6aaff8f0",
+    "playerTwo": "0xb072d8A4d85D395bAc3ec7cc9B660037C06D2224",
+    "transactions": {
+      "create": "0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3",
+      "join": "0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6",
+      "playerOneReveal": "0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51",
+      "playerTwoRevealAndSettle": "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b"
+    },
+    "readback": {
+      "playerOneCountry": "Nigeria",
+      "playerTwoCountry": "France",
+      "playerOneBalance": "105",
+      "playerTwoBalance": "95",
+      "playerOneWins": "1",
+      "playerTwoLosses": "1",
+      "score": "3-0"
+    }
   }
 }

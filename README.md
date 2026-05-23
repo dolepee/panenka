@@ -6,6 +6,8 @@ This MVP is a game, not a betting market. V1 uses non-transferable DuelCredit in
 
 Live app: `https://panenka-alpha.vercel.app`
 
+Project X account: `https://x.com/PanenkaGG`
+
 Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
 
 ## What Is Built
@@ -16,6 +18,7 @@ Public testers can play with one wallet against Panenka Bot. The contract still 
 - Foundry tests covering the full duel lifecycle and failure cases.
 - X Layer testnet deployment and first two-wallet duel proof.
 - Server-side Panenka Bot endpoint for one-wallet testing.
+- Live leaderboard reads `KickerNFT` owner and stats state from X Layer.
 
 ## X Layer Testnet Proof
 
@@ -23,37 +26,44 @@ Chain: X Layer testnet (`1952`)
 
 Contracts:
 
-- `DuelCredit`: `0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98`
-- `KickerNFT`: `0x33dc85f938f21c8cf83556f444d16e61377a35a3`
-- `PenaltyDuel`: `0xebd15b2baa79a84d6e509b2dae12526abe5dacdb`
+- `DuelCredit`: [`0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98`](https://www.okx.com/web3/explorer/xlayer-test/address/0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98)
+- `KickerNFT`: [`0x33dc85f938f21c8cf83556f444d16e61377a35a3`](https://www.okx.com/web3/explorer/xlayer-test/address/0x33dc85f938f21c8cf83556f444d16e61377a35a3)
+- `PenaltyDuel`: [`0xebd15b2baa79a84d6e509b2dae12526abe5dacdb`](https://www.okx.com/web3/explorer/xlayer-test/address/0xebd15b2baa79a84d6e509b2dae12526abe5dacdb)
 
 First settled duel proof:
 
 - Duel: `#1`
-- Create duel tx: `0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3`
-- Join duel tx: `0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6`
-- Player one reveal / settle tx: `0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51`
-- Player two reveal / settle tx: `0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b`
+- Create duel tx: [`0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3`](https://www.okx.com/web3/explorer/xlayer-test/tx/0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3)
+- Join duel tx: [`0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6`](https://www.okx.com/web3/explorer/xlayer-test/tx/0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6)
+- Player one reveal tx: [`0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51`](https://www.okx.com/web3/explorer/xlayer-test/tx/0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51)
+- Player two reveal and settlement tx: [`0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b`](https://www.okx.com/web3/explorer/xlayer-test/tx/0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b)
 
-Readback after settlement:
+Recorded readback immediately after that settlement:
 
 - Player one: Nigeria kicker, `105` DuelCredit, `1` win, `1` streak.
 - Player two: France kicker, `95` DuelCredit, `1` loss.
 
-One-wallet bot proof:
+Verifier:
 
-- Duel: `#3`
-- User create tx: `0x4bee457c923c5b56d0cd59aaebea89ab0fcbc6b17d38a0156567173fcfb7841f`
-- Bot join tx: `0x3e2b68ef20ff5dcd463a6907d4a878d9f408c4114884dce9156b44f3f07efaa5`
-- User reveal tx: `0x03dcd94f84776141e43455eb7fc03b91d923e1f65915525ec3cfde664efefe90`
-- Bot reveal / settle tx: `0xc925226d6e7bb64e44eff769a7801847960f481e37c8622945eba1a6b3b7364f`
+```bash
+npm run verify:duel
+```
+
+Expected success marker:
+
+```text
+PANENKA_DUEL_VALID
+```
 
 ## Commands
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 npm run contracts:build
 npm run contracts:test
+npm run app:typecheck
+npm run app:build
+npm run verify:duel
 ```
 
 Deploy after filling `.env`:
@@ -79,7 +89,7 @@ That script claims DuelCredit when possible, mints two kickers if needed, create
 Frontend:
 
 ```bash
-pnpm --dir app install
+pnpm install --frozen-lockfile
 npm run app:dev
 npm run app:build
 ```

@@ -270,7 +270,7 @@ function Home() {
       </div>
       <div className="duelCard">
         <div className="duelTop">
-          <span>Duel #5 settled</span>
+          <span>Duel #1 settled</span>
           <span>X Layer proof</span>
         </div>
         <div className="pitch">
@@ -280,10 +280,10 @@ function Home() {
         </div>
         <div className="score">
           <span>Nigeria 3</span>
-          <strong>4</strong>
-          <span>Japan Bot</span>
+          <strong>0</strong>
+          <span>France</span>
         </div>
-        <div className="heroTx">latest proof · fixed duel #1 settled · leaderboard updated</div>
+        <div className="heroTx">proof duel #1 · credits 95 to 105 · NFT stats updated</div>
       </div>
     </section>
   );
@@ -480,7 +480,7 @@ function Play({
     if (!account) return;
     const stakeAmount = parseUnits(stake || "0", 18);
     if (stakeAmount <= 0n) {
-      notify("Stake must be greater than 0 DCR.");
+      notify("Duel entry must be greater than 0 DCR.");
       return;
     }
     if (!(await canSpendStake(stakeAmount))) return;
@@ -808,7 +808,7 @@ function Play({
         <article className="panel">
           <h3>3. Create a duel</h3>
           <label>
-            Stake
+            Duel entry (DCR)
             <input value={stake} onChange={(event) => setStake(event.target.value)} />
           </label>
           <p className="muted">

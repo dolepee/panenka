@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.1.2 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build contracts
+        run: npm run contracts:build
+
+      - name: Test contracts
+        run: npm run contracts:test
+
+      - name: Typecheck frontend
+        run: npm run app:typecheck
+
+      - name: Build frontend
+        run: npm run app:build
+
+      - name: Verify X Layer proof
+        run: npm run verify:duel

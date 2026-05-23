@@ -8,6 +8,7 @@
     "contracts:test": "forge test",
     "deploy:xlayer": "tsx scripts/deploy.ts",
     "duel:xlayer": "tsx scripts/run-duel.ts",
+    "verify:duel": "tsx scripts/verify-duel.ts",
     "app:dev": "pnpm --dir app dev",
     "app:build": "pnpm --dir app build",
     "app:typecheck": "pnpm --dir app typecheck"
