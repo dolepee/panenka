@@ -126,6 +126,7 @@ const countryById = Object.fromEntries(countries.map((country) => [country.id, c
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const PROOF_DUEL_ID = 1;
 const PROOF_SETTLEMENT_TX = "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b";
+const XLAYER_TESTNET_FAUCET = "https://web3.okx.com/en-us/xlayer/faucet";
 
 const publicClient = createPublicClient({ chain: xLayer, transport: http() });
 
@@ -389,6 +390,8 @@ function Home() {
     "",
     "Flow: connect wallet -> mint a country kicker -> claim DCR -> approve -> create a 1 DCR duel -> bot joins -> reveal -> bot reveals and settles.",
     "",
+    `Need testnet OKB gas? Official X Layer faucet: ${XLAYER_TESTNET_FAUCET}`,
+    "",
     `App: ${location.origin}`,
     "",
     "After settlement, click Copy tester report and send the text plus a screenshot. No betting and no real-money stake.",
@@ -475,6 +478,7 @@ function Home() {
             </div>
             <ol>
               <li>Connect on X Layer testnet.</li>
+              <li>If your wallet has no gas, claim testnet OKB from the official X Layer faucet.</li>
               <li>Mint a country kicker and claim DuelCredit.</li>
               <li>Create a 1 DCR duel, let Panenka Bot join, reveal, then let the bot settle.</li>
               <li>Copy the tester report and screenshot the result.</li>
@@ -482,6 +486,7 @@ function Home() {
             <div className="testerActions">
               <button onClick={copyTesterInvite}>Copy tester invite</button>
               <a href="#play">Start test duel</a>
+              <a href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">Get test OKB</a>
             </div>
           </div>
           <div className="activityLinks">
@@ -1092,6 +1097,7 @@ function Play({
         </div>
         <ol className="guideSteps">
           <li><strong>Fast path:</strong> mint if needed, claim DCR, approve, create a duel, click Bot joins, reveal, then Bot reveals.</li>
+          <li><strong>Need gas:</strong> use the official <a href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">X Layer testnet faucet</a> if your wallet has no OKB.</li>
           <li><strong>Friend path:</strong> create a duel, copy the invite link, and send it to a remote friend. They join from their own wallet.</li>
           <li><strong>Important:</strong> the same browser that created or joined must reveal, because the hidden plan is stored locally.</li>
           <li><strong>Proof:</strong> after settlement, the app shows winner, score, five round outcomes, and the X Layer transaction.</li>

@@ -145,13 +145,14 @@ These events are the judge-facing proof: a duel has two players, both commits ar
 ## Demo Flow
 
 1. Connect wallet.
-2. Mint or pick a country kicker.
-3. Claim DuelCredit from the faucet.
-4. Create a duel with a hidden commitment.
-5. Click `Bot joins this duel` for one-wallet testing, or ask a human opponent to join.
-6. Reveal from your wallet.
-7. Click `Bot reveals and settles`, or ask the human opponent to reveal.
-8. The UI shows the settlement transaction, stats update, and leaderboard change.
+2. If the wallet has no gas, claim X Layer testnet OKB from the official faucet: `https://web3.okx.com/en-us/xlayer/faucet`.
+3. Mint or pick a country kicker.
+4. Claim DuelCredit from the faucet.
+5. Create a duel with a hidden commitment.
+6. Click `Bot joins this duel` for one-wallet testing, or ask a human opponent to join.
+7. Reveal from your wallet.
+8. Click `Bot reveals and settles`, or ask the human opponent to reveal.
+9. The UI shows the settlement transaction, stats update, and leaderboard change.
 
 Fast judge path:
 
