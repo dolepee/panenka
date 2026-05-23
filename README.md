@@ -78,7 +78,10 @@ npm run contracts:test
 npm run app:typecheck
 npm run app:build
 npm run verify:duel
+npm run verify:live
 ```
+
+`npm run verify:live` checks the production app, `/api/proof`, `/api/leaderboard`, Panenka Bot readiness, and the latest settlement tx before recording or submitting.
 
 Deploy after filling `.env`:
 

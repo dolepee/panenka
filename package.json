@@ -11,7 +11,8 @@
     "duel:xlayer": "tsx scripts/run-duel.ts",
     "exhibition:run": "tsx scripts/run-exhibition.ts",
     "verify:duel": "tsx scripts/verify-duel.ts",
-    "api:typecheck": "tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 --skipLibCheck api/bot-opponent.ts api/leaderboard.ts api/proof.ts scripts/verify-duel.ts scripts/run-exhibition.ts",
+    "verify:live": "tsx scripts/verify-live.ts",
+    "api:typecheck": "tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 --skipLibCheck api/bot-opponent.ts api/leaderboard.ts api/proof.ts scripts/verify-duel.ts scripts/verify-live.ts scripts/run-exhibition.ts",
     "app:dev": "pnpm --dir app dev",
     "app:build": "pnpm --dir app build",
     "app:typecheck": "pnpm --dir app typecheck"
