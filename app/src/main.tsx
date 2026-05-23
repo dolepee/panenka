@@ -99,6 +99,16 @@ type ProofActivity = {
     score?: string | null;
   }>;
 };
+type BotHealth = {
+  bot: string;
+  ready: boolean;
+  okb: string;
+  duelCredit: string;
+  publicStakeCap: string;
+  allowanceCoversPublicStake: boolean;
+  hasKicker: boolean;
+  tokenId: string;
+};
 
 const countries = [
   { id: 1, name: "Argentina" },
@@ -405,6 +415,8 @@ function Play({
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
   const [animatedRound, setAnimatedRound] = useState(0);
   const [actionNotice, setActionNotice] = useState("Create a duel, let the bot join, then reveal from this same browser.");
+  const [botHealth, setBotHealth] = useState<BotHealth | null>(null);
+  const [botHealthStatus, setBotHealthStatus] = useState("Checking Panenka Bot readiness...");
   const canWrite = Boolean(account && provider && hasContracts);
 
   function notify(message: string) {
@@ -420,6 +432,7 @@ function Play({
       setInviteLink(playLink(invitedDuelId));
     }
     void refresh();
+    void refreshBotHealth();
   }, [account]);
 
   useEffect(() => {
@@ -455,6 +468,22 @@ function Play({
       setStoredPlanIds(account ? localPlanIds(account) : []);
     } catch (error) {
       notify(error instanceof Error ? error.message : "Read failed.");
+    }
+  }
+
+  async function refreshBotHealth() {
+    try {
+      const response = await fetch("/api/bot-opponent");
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "Bot health check failed.");
+      setBotHealth(body);
+      setBotHealthStatus(
+        body.ready
+          ? `Panenka Bot ready for ${Number(body.publicStakeCap).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR public duels.`
+          : "Panenka Bot is not ready. Use a second wallet if you want to play now.",
+      );
+    } catch (error) {
+      setBotHealthStatus(error instanceof Error ? error.message : "Could not check Panenka Bot readiness.");
     }
   }
 
@@ -765,6 +794,7 @@ function Play({
           : `Panenka Bot revealed duel #${duelId}. If you already revealed, the duel is settled.`,
       );
       await refresh();
+      await refreshBotHealth();
       await inspectDuel(String(duelId), true);
     } catch (error) {
       notify(error instanceof Error ? error.message : "Bot request failed.");
@@ -802,6 +832,7 @@ function Play({
         <span>{hasContracts ? `X Layer ${XLAYER_CHAIN_ID}` : "Contracts not configured yet"}</span>
         <span>{account ? short(account) : "Wallet not connected"}</span>
         <span>{nextDuelId ? `Next duel #${nextDuelId}` : "Awaiting deploy"}</span>
+        <span>{botHealth ? `Bot ${botHealth.ready ? "ready" : "not ready"} · ${Number(botHealth.duelCredit).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR` : botHealthStatus}</span>
         <span>{storedPlanIds.length ? `Local reveal plan: #${storedPlanIds.join(", #")}` : "No local reveal plan yet"}</span>
         <strong>{status}</strong>
         {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">View last tx</a> : null}
@@ -923,6 +954,11 @@ function Play({
             Duel ID
             <input value={joinDuelId} onChange={(event) => setJoinDuelId(event.target.value)} placeholder="17" />
           </label>
+          <p className="muted">
+            {botHealth
+              ? `Panenka Bot is ${botHealth.ready ? "ready" : "not ready"} for public ${Number(botHealth.publicStakeCap).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR duels. It has ${Number(botHealth.duelCredit).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR and kicker #${botHealth.tokenId}.`
+              : botHealthStatus}
+          </p>
           <div className="actionRow">
             <button onClick={() => callBot("join")} disabled={botBusy || (duelView?.id === Number(joinDuelId) && duelView.p1.toLowerCase() === ZERO_ADDRESS)}>
               {botBusy ? "Bot working..." : "Bot joins this duel"}

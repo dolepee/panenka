@@ -81,14 +81,40 @@ function userError(error: unknown) {
   return message;
 }
 
+async function readBotHealth(publicClient: ReturnType<typeof createPublicClient>, bot: ReturnType<typeof privateKeyToAccount>) {
+  const [gasBalance, creditBalance, allowance, tokenId] = await Promise.all([
+    publicClient.getBalance({ address: bot.address }),
+    publicClient.readContract({ address: DUEL_CREDIT, abi: creditAbi, functionName: "balanceOf", args: [bot.address] }),
+    publicClient.readContract({ address: DUEL_CREDIT, abi: creditAbi, functionName: "allowance", args: [bot.address, PENALTY_DUEL] }),
+    publicClient.readContract({ address: KICKER_NFT, abi: kickerAbi, functionName: "tokenOfOwner", args: [bot.address] }),
+  ]);
+  return {
+    bot: bot.address,
+    ready: gasBalance >= 1_000_000_000_000_000n && (creditBalance as bigint) >= BOT_MAX_STAKE_WEI && (allowance as bigint) >= BOT_MAX_STAKE_WEI && (tokenId as bigint) > 0n,
+    okb: formatEther(gasBalance),
+    duelCredit: formatUnits(creditBalance as bigint, 18),
+    publicStakeCap: formatUnits(BOT_MAX_STAKE_WEI, 18),
+    allowanceCoversPublicStake: (allowance as bigint) >= BOT_MAX_STAKE_WEI,
+    hasKicker: (tokenId as bigint) > 0n,
+    tokenId: (tokenId as bigint).toString(),
+  };
+}
+
 export default async function handler(request: any, response: any) {
   try {
-    if (request.method !== "POST") {
-      response.status(405).json({ error: "POST only" });
+    if (request.method !== "POST" && request.method !== "GET") {
+      response.status(405).json({ error: "GET or POST only" });
       return;
     }
     if (!BOT_PRIVATE_KEY) {
       response.status(500).json({ error: "BOT_PRIVATE_KEY is not configured" });
+      return;
+    }
+
+    const bot = privateKeyToAccount(BOT_PRIVATE_KEY);
+    const publicClient = createPublicClient({ chain, transport: http(XLAYER_RPC_URL) });
+    if (request.method === "GET") {
+      response.status(200).json(await readBotHealth(publicClient, bot));
       return;
     }
 
@@ -99,8 +125,6 @@ export default async function handler(request: any, response: any) {
       return;
     }
 
-    const bot = privateKeyToAccount(BOT_PRIVATE_KEY);
-    const publicClient = createPublicClient({ chain, transport: http(XLAYER_RPC_URL) });
     const walletClient = createWalletClient({ account: bot, chain, transport: http(XLAYER_RPC_URL) });
 
     async function wait(hash: `0x${string}`) {

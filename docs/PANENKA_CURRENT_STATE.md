@@ -76,6 +76,7 @@ The authoritative live values are returned by `https://panenka-alpha.vercel.app/
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
 - Share links let players post settled results to X with `@XLayerOfficial` tagged.
 - Panenka Bot is capped to public exhibition duels of `1 DCR` by default so the one-wallet demo path stays reliable during public testing.
+- `GET /api/bot-opponent` exposes Panenka Bot readiness, public stake cap, DCR balance, gas, allowance coverage, and kicker status.
 - `/api/proof` gives AI judges one JSON surface for contracts, proof txs, settled/open/draw duel counts, recent duel states, and verifier command.
 - `npm run exhibition:run` can create real pre-submission activity with deterministic funded test wallets, country rotation, and multiple settled duels.
 
