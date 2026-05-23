@@ -14,6 +14,13 @@ Public testers can play with one wallet against Panenka Bot. The contract still 
 
 Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard` so the README does not go stale as testers create more duels.
 
+## Why This Fits X Cup
+
+- **Innovation:** Panenka turns the World Cup penalty moment into a hidden-plan commit/reveal duel instead of another prediction market.
+- **Market potential:** country kickers, country leaderboards, result sharing, and bot duels give football fans a fast reason to create X Layer transactions.
+- **Completion:** contracts are deployed on X Layer testnet, the app is live, the bot path is playable with one wallet, and every settled duel has explorer proof.
+- **Safety:** Panenka is a game, not a gamble. DuelCredit is non-transferable in-game credit, with no real-money betting, no official World Cup/FIFA branding, and no player likenesses.
+
 ## What Is Built
 
 - `DuelCredit`: non-transferable in-game credit with a daily faucet and duel-only transfer route.

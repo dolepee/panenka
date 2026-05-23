@@ -410,12 +410,14 @@ function Home() {
         <h1>Penalty duels on X Layer.</h1>
         <p className="lede">
           Mint a country kicker, commit hidden shots, and face Panenka Bot in under a minute. Every reveal, round, score,
-          credit transfer, and leaderboard move is verifiable on X Layer.
+          credit transfer, and leaderboard move is verifiable on X Layer. No betting, no real-money stake, only
+          non-transferable in-game DuelCredit.
         </p>
         <div className="heroProof">
           <span>{activity?.settledDuels ?? "-"} settled duels</span>
           <span>{activity?.countryCount ?? "-"} countries live</span>
           <span>{activity?.mintedKickers ?? "-"} kickers minted</span>
+          <span>game, not gamble</span>
         </div>
         <article className="liveActivity">
           <div>
@@ -483,6 +485,7 @@ function Home() {
             </div>
           </div>
           <div className="activityLinks">
+            <a href="https://x.com/PanenkaGG" target="_blank" rel="noreferrer">Project X</a>
             <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>
             {duelContract ? <a href={duelContract.explorer} target="_blank" rel="noreferrer">Duel contract</a> : null}
             {latestSettlementTx ? <a href={latestSettlementTx} target="_blank" rel="noreferrer">Latest tx</a> : null}
@@ -990,7 +993,7 @@ function Play({
       <h2>Play the bot now. Invite a friend later.</h2>
       <p className="lede compact">
         Your wallet creates and reveals. Panenka Bot joins as the opponent, or you send an invite link to a remote friend.
-        The contract still settles a real two-player commit-reveal shootout.
+        The contract still settles a real two-player commit-reveal shootout using non-transferable in-game credits.
       </p>
 
       <div className="statusPanel">
