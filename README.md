@@ -12,7 +12,7 @@ Project X account: `https://x.com/PanenkaGG`
 
 Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
 
-Current live X Layer activity: `14` country kickers minted, `21` duels created, `20` duels settled, and all `8` country slots represented in the leaderboard. The live counts are returned by `/api/proof` and `/api/leaderboard`.
+Current live X Layer activity: `14` country kickers minted, `22` duels created, `21` duels settled, and all `8` country slots represented in the leaderboard. The live counts are returned by `/api/proof` and `/api/leaderboard`.
 
 ## What Is Built
 
@@ -26,7 +26,7 @@ Current live X Layer activity: `14` country kickers minted, `21` duels created, 
 - Replay page loads the latest settled duel from live X Layer state, with the proof duel as a fallback.
 - Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
 - Country leaderboard rows include X challenge links so the World Cup rivalry loop can spread from each onchain result.
-- Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, settled/open/draw duel counts, recent duels, and verifier marker.
+- Machine-readable `/api/proof` endpoint for AI judges: contracts, proof txs, settled/open/draw duel counts, recent duels, recent settlement tx links, and verifier marker.
 
 ## X Layer Testnet Proof
 

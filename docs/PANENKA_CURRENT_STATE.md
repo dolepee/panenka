@@ -63,8 +63,8 @@ PANENKA_DUEL_VALID
 As of 2026-05-23, the live X Layer testnet deployment has:
 
 - `14` country kickers minted.
-- `21` duels created.
-- `20` duels settled.
+- `22` duels created.
+- `21` duels settled.
 - `8` countries represented in the country leaderboard.
 - `3` level-2 kickers from repeated onchain wins.
 
@@ -78,12 +78,12 @@ The authoritative live values are returned by `https://panenka-alpha.vercel.app/
 - Share links let players post settled results to X with `@XLayerOfficial` tagged.
 - Panenka Bot is capped to public exhibition duels of `1 DCR` by default so the one-wallet demo path stays reliable during public testing.
 - `GET /api/bot-opponent` exposes Panenka Bot readiness, public stake cap, DCR balance, gas, allowance coverage, and kicker status.
-- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, settled/open/draw duel counts, recent duel states, and verifier command.
+- `/api/proof` gives AI judges one JSON surface for contracts, proof txs, settled/open/draw duel counts, recent duel states, recent settlement tx links, and verifier command.
 - `npm run exhibition:run` can create real pre-submission activity with deterministic funded test wallets, country rotation, and multiple settled duels.
 
 ## Activity Target Before Final Demo
 
-- At least `20` settled duels. Achieved: `20`.
+- At least `20` settled duels. Achieved: `21`.
 - At least `8` country kickers. Achieved: `14`.
 - At least `8` countries visible in the country leaderboard. Achieved: `8`.
 - At least `3` public X posts showing rivalry results and tagging `@XLayerOfficial`.

@@ -97,6 +97,7 @@ type ProofActivity = {
     p1Country?: string | null;
     p2Country?: string | null;
     score?: string | null;
+    settlementTx?: { hash: string; explorer: string } | null;
   }>;
 };
 type BotHealth = {
@@ -326,7 +327,8 @@ function Home() {
 
   const activity = proof?.onchainActivity;
   const latestSettledDuel = proof?.recentDuels?.find((duel) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country);
-  const proofTx = proof?.proofDuel?.transactions?.playerTwoRevealAndSettle?.explorer;
+  const latestSettlementTx = latestSettledDuel?.settlementTx?.explorer;
+  const proofTx = latestSettlementTx ?? proof?.proofDuel?.transactions?.playerTwoRevealAndSettle?.explorer;
   const duelContract = proof?.contracts?.PenaltyDuel;
   const heroDuelId = latestSettledDuel?.duelId ?? "1";
   const heroSideOne = latestSettledDuel?.p1Country ?? "Nigeria";
@@ -361,7 +363,7 @@ function Home() {
           <div className="activityLinks">
             <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>
             {duelContract ? <a href={duelContract.explorer} target="_blank" rel="noreferrer">Duel contract</a> : null}
-            {proofTx ? <a href={proofTx} target="_blank" rel="noreferrer">Proof tx</a> : null}
+            {proofTx ? <a href={proofTx} target="_blank" rel="noreferrer">{latestSettlementTx ? "Latest tx" : "Proof tx"}</a> : null}
           </div>
         </article>
         <div className="ctaRow">
@@ -1062,8 +1064,8 @@ function Replay() {
           setSideOne(latest.p1Country);
           setSideTwo(latest.p2Country);
           setReplayDuelId(latest.duelId);
-          setProofHref("/api/proof");
-          setProofLabel("Open proof API");
+          setProofHref(latest.settlementTx?.explorer ?? "/api/proof");
+          setProofLabel(latest.settlementTx?.explorer ? "Open settlement tx" : "Open proof API");
           setStatus(`Latest settled duel #${latest.duelId} loaded from X Layer state at block ${proofBody.chain?.latestBlock ?? "unknown"}.`);
           return;
         }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createPublicClient, defineChain, http, parseAbi } from "viem";
+import { createPublicClient, defineChain, http, parseAbi, parseAbiItem } from "viem";
 
 const XLAYER_RPC_URL = process.env.XLAYER_RPC_URL ?? "https://testrpc.xlayer.tech/terigon";
 const XLAYER_CHAIN_ID = Number(process.env.XLAYER_CHAIN_ID ?? 1952);
@@ -18,6 +18,10 @@ const PROOF_TXS = {
   playerOneReveal: "0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51",
   playerTwoRevealAndSettle: "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b",
 };
+const KNOWN_SETTLEMENT_TXS: Record<string, string> = {
+  [PROOF_DUEL_ID]: PROOF_TXS.playerTwoRevealAndSettle,
+  "22": "0x7a08f732edf8681145a2ded33b19da83c7e5dedabc98fdf6493a38f6055622cb",
+};
 
 const chain = defineChain({
   id: XLAYER_CHAIN_ID,
@@ -34,6 +38,9 @@ const duelAbi = parseAbi([
   "function nextDuelId() external view returns (uint256)",
   "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
 ]);
+const settledEvent = parseAbiItem(
+  "event DuelSettled(uint256 indexed duelId, address indexed winner, uint8 p1Score, uint8 p2Score, uint256 payout, bool draw)",
+);
 const statusLabels = ["Open", "Committed", "Settled", "Cancelled", "Forfeited"];
 const countries: Record<number, string> = {
   1: "Argentina",
@@ -108,6 +115,42 @@ export default async function handler(_: any, response: any) {
   const readableKickers = kickerStats.filter(Boolean);
   const kickerById = Object.fromEntries(readableKickers.map((row) => [row.tokenId, row]));
   const countryIds = new Set(readableKickers.map((row) => row.countryId));
+  let settlementByDuelId: Record<string, { hash: string; explorer: string; blockNumber: string | null; logIndex: number | null }> =
+    Object.fromEntries(
+      Object.entries(KNOWN_SETTLEMENT_TXS).map(([duelId, hash]) => [
+        duelId,
+        {
+          hash,
+          explorer: txUrl(hash),
+          blockNumber: null,
+          logIndex: null,
+        },
+      ]),
+    );
+  try {
+    const settlementLogs = await client.getLogs({
+      address: PENALTY_DUEL,
+      event: settledEvent,
+      fromBlock: PROOF_FROM_BLOCK,
+      toBlock: latestBlock,
+    });
+    settlementByDuelId = {
+      ...settlementByDuelId,
+      ...Object.fromEntries(
+        settlementLogs.map((log) => [
+          log.args.duelId?.toString() ?? "0",
+          {
+            hash: log.transactionHash,
+            explorer: txUrl(log.transactionHash),
+            blockNumber: log.blockNumber.toString(),
+            logIndex: log.logIndex,
+          },
+        ]),
+      ),
+    };
+  } catch {
+    // X Layer testnet RPC can reject eth_getLogs. Keep pinned proof txs available.
+  }
   const duelIds = Array.from({ length: Number((nextDuelId as bigint) - 1n) }, (_, index) => BigInt(index + 1));
   const duelReads = await Promise.all(
     duelIds.map(async (duelId) => {
@@ -135,6 +178,7 @@ export default async function handler(_: any, response: any) {
           p2Revealed: Boolean(field(p2, "revealed", 3)),
           score: score ? `${score.p1Score}-${score.p2Score}` : null,
           draw: score?.draw ?? false,
+          settlementTx: status === 2 ? settlementByDuelId[duelId.toString()] ?? null : null,
         };
       } catch {
         return null;
