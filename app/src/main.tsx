@@ -314,6 +314,7 @@ function Home() {
   const [proofStatus, setProofStatus] = useState("Loading live X Layer activity...");
   const [raceStatus, setRaceStatus] = useState("Loading country race...");
   const [homeBotStatus, setHomeBotStatus] = useState("Checking Panenka Bot...");
+  const [testerCopyStatus, setTesterCopyStatus] = useState("Copy the 60-second tester invite.");
 
   useEffect(() => {
     async function loadProof() {
@@ -372,6 +373,24 @@ function Home() {
   const heroScore = latestSettledDuel?.score ?? "3-0";
   const [heroSideOneScore, heroSideTwoScore] = heroScore.split("-");
   const heroShareText = `Panenka duel #${heroDuelId}: ${heroSideOne} ${heroScore} ${heroSideTwo} on X Layer`;
+  const testerInvite = [
+    "Can you test Panenka for me? It is a World Cup-style penalty shootout game on X Layer testnet.",
+    "",
+    "Flow: connect wallet -> mint a country kicker -> claim DCR -> approve -> create a 1 DCR duel -> bot joins -> reveal -> bot reveals and settles.",
+    "",
+    `App: ${location.origin}`,
+    "",
+    "After settlement, click Copy tester report and send the text plus a screenshot. No betting and no real-money stake.",
+  ].join("\n");
+
+  async function copyTesterInvite() {
+    try {
+      await navigator.clipboard?.writeText(testerInvite);
+      setTesterCopyStatus("Tester invite copied.");
+    } catch {
+      setTesterCopyStatus("Clipboard blocked. Use the tester path text on this card.");
+    }
+  }
 
   return (
     <section className="hero">
@@ -434,6 +453,23 @@ function Home() {
               </strong>
             </div>
             <a href="#play">Start a bot duel</a>
+          </div>
+          <div className="testerMission">
+            <div>
+              <span>Tester mission</span>
+              <strong>One wallet can finish a public 1 DCR bot duel in about a minute.</strong>
+              <p>{testerCopyStatus}</p>
+            </div>
+            <ol>
+              <li>Connect on X Layer testnet.</li>
+              <li>Mint a country kicker and claim DuelCredit.</li>
+              <li>Create a 1 DCR duel, let Panenka Bot join, reveal, then let the bot settle.</li>
+              <li>Copy the tester report and screenshot the result.</li>
+            </ol>
+            <div className="testerActions">
+              <button onClick={copyTesterInvite}>Copy tester invite</button>
+              <a href="#play">Start test duel</a>
+            </div>
           </div>
           <div className="activityLinks">
             <a href="/api/proof" target="_blank" rel="noreferrer">Proof API</a>
