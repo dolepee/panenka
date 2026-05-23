@@ -150,7 +150,7 @@ function explorerAddress(address: string) {
 }
 
 function shareResultUrl(text: string) {
-  return `https://x.com/intent/tweet?text=${encodeURIComponent(`${text}\n\nBuilt on @XLayerOfficial.\nhttps://panenka-alpha.vercel.app`)}`;
+  return `https://x.com/intent/tweet?text=${encodeURIComponent(`${text}\n\nPlayed on @PanenkaGG, built on @XLayerOfficial.\nhttps://panenka-alpha.vercel.app\n\n#XLayerHackathon`)}`;
 }
 
 function shareCountryUrl(row: CountryLeaderboardRow, rank: number) {
@@ -395,6 +395,7 @@ function Home() {
     `App: ${location.origin}`,
     "",
     "After settlement, click Copy tester report and send the text plus a screenshot. No betting and no real-money stake.",
+    "If you post the result, tag @PanenkaGG and @XLayerOfficial.",
   ].join("\n");
 
   async function copyTesterInvite() {
