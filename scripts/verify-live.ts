@@ -8,7 +8,10 @@ type ProofResponse = {
     settledDuels?: number;
     countryCount?: number;
     activeWallets?: number;
+    manualWallets?: number;
+    exhibitionWallets?: number;
   };
+  wallets?: { total?: number; manual?: number; exhibition?: number };
   recentDuels?: Array<{
     duelId?: string;
     statusLabel?: string;
@@ -17,6 +20,10 @@ type ProofResponse = {
     score?: string | null;
     settlementTx?: { hash?: string; explorer?: string } | null;
     settlementTxStatus?: string;
+    commitReveal?: {
+      playerOne?: { commitHash?: string; revealed?: boolean; shots?: number[]; saves?: number[] };
+      playerTwo?: { commitHash?: string; revealed?: boolean; shots?: number[]; saves?: number[] };
+    };
   }>;
   verifier?: { successMarker?: string };
 };
@@ -72,12 +79,18 @@ async function main() {
   assertOk((activity?.settledDuels ?? 0) >= 30, `too few settled duels: ${activity?.settledDuels ?? 0}`);
   assertOk((activity?.countryCount ?? 0) >= 8, `too few countries represented: ${activity?.countryCount ?? 0}`);
   assertOk((activity?.activeWallets ?? 0) >= 20, `too few active wallets: ${activity?.activeWallets ?? 0}`);
+  assertOk((proof.wallets?.manual ?? 0) >= 6, `too few manual/tester wallets: ${proof.wallets?.manual ?? 0}`);
+  assertOk((proof.wallets?.exhibition ?? 0) >= 14, `too few exhibition wallets: ${proof.wallets?.exhibition ?? 0}`);
 
   const latestSettled = proof.recentDuels?.find((duel) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country);
   assertOk(latestSettled, "no recent settled duel with country names");
   assertOk(latestSettled?.score?.includes("-"), `latest duel score missing: ${latestSettled?.score ?? "none"}`);
   assertOk(latestSettled?.settlementTxStatus === "available", "latest duel settlement tx is unavailable");
   assertOk(latestSettled?.settlementTx?.hash?.startsWith("0x"), "latest duel settlement hash missing");
+  assertOk(latestSettled?.commitReveal?.playerOne?.commitHash?.startsWith("0x"), "latest duel player one commit hash missing");
+  assertOk(latestSettled?.commitReveal?.playerTwo?.commitHash?.startsWith("0x"), "latest duel player two commit hash missing");
+  assertOk(latestSettled?.commitReveal?.playerOne?.revealed, "latest duel player one reveal missing");
+  assertOk(latestSettled?.commitReveal?.playerTwo?.revealed, "latest duel player two reveal missing");
 
   assertOk(leaderboard.source === "KickerNFT ownerOf/statsOf", `unexpected leaderboard source: ${leaderboard.source ?? "none"}`);
   assertOk((leaderboard.countryRows?.length ?? 0) >= 8, `country leaderboard incomplete: ${leaderboard.countryRows?.length ?? 0}`);
@@ -95,7 +108,10 @@ async function main() {
   console.log(
     `activity: ${activity?.mintedKickers} kickers, ${activity?.duelsCreated} duels created, ${activity?.settledDuels} settled, ${activity?.countryCount} countries`,
   );
-  console.log(`wallets: ${activity?.activeWallets} active player wallets`);
+  console.log(
+    `wallets: ${proof.wallets?.total ?? activity?.activeWallets} active (${proof.wallets?.exhibition ?? 0} exhibition + ${proof.wallets?.manual ?? 0} manual/tester)`,
+  );
+  console.log("commit reveal: latest settled duel exposes both hidden commits and revealed five-round plans");
   console.log(
     `latest: #${latestSettled?.duelId} ${latestSettled?.p1Country} ${latestSettled?.score} ${latestSettled?.p2Country}`,
   );
