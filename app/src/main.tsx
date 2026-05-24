@@ -62,9 +62,20 @@ type RoundResult = {
   p1Save?: number;
   p2Save?: number;
 };
+type CommitRevealPlan = {
+  commitHash?: string;
+  revealed?: boolean;
+  shots?: number[];
+  saves?: number[];
+};
+type CommitRevealPair = {
+  playerOne?: CommitRevealPlan;
+  playerTwo?: CommitRevealPlan;
+};
 type LeaderboardRow = {
   tokenId: string;
   player: string;
+  walletType?: "manual" | "exhibition";
   country: string;
   wins: number;
   losses: number;
@@ -88,7 +99,10 @@ type ProofActivity = {
     duelsCreated: number;
     countryCount: number;
     activeWallets?: number;
+    manualWallets?: number;
+    exhibitionWallets?: number;
   };
+  wallets?: { total: number; manual: number; exhibition: number; exhibitionPurpose?: string };
   proofDuel?: {
     transactions?: { playerTwoRevealAndSettle?: { explorer: string } };
   };
@@ -98,6 +112,7 @@ type ProofActivity = {
     p1Country?: string | null;
     p2Country?: string | null;
     score?: string | null;
+    commitReveal?: CommitRevealPair;
     settlementTx?: { hash: string; explorer: string } | null;
     settlementTxStatus?: "available" | "unavailable" | "not-settled";
   }>;
@@ -133,6 +148,25 @@ const publicClient = createPublicClient({ chain: xLayer, transport: http() });
 
 function short(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function shortHash(hash?: string) {
+  if (!hash) return "pending";
+  return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
+}
+
+function directionArrow(direction?: number) {
+  if (direction === 0) return "←";
+  if (direction === 1) return "↑";
+  if (direction === 2) return "→";
+  return "·";
+}
+
+function directionName(direction?: number) {
+  if (direction === 0) return "left";
+  if (direction === 1) return "center";
+  if (direction === 2) return "right";
+  return "hidden";
 }
 
 function txLink(hash: string) {
@@ -384,6 +418,13 @@ function Home() {
   const latestSettlementTx = latestSettledDuel?.settlementTx?.explorer;
   const proofDuelTx = proof?.proofDuel?.transactions?.playerTwoRevealAndSettle?.explorer;
   const duelContract = proof?.contracts?.PenaltyDuel;
+  const walletTotal = proof?.wallets?.total ?? activity?.activeWallets ?? activity?.mintedKickers ?? "-";
+  const walletDetail = proof?.wallets
+    ? `${proof.wallets.exhibition} exhibition + ${proof.wallets.manual} manual`
+    : "active player wallets";
+  const walletBreakdown = proof?.wallets
+    ? `${proof.wallets.exhibition} exhibition + ${proof.wallets.manual} manual`
+    : `${activity?.activeWallets ?? activity?.mintedKickers ?? "-"} active wallets`;
   const heroDuelId = latestSettledDuel?.duelId ?? "1";
   const heroSideOne = latestSettledDuel?.p1Country ?? "Nigeria";
   const heroSideTwo = latestSettledDuel?.p2Country ?? "France";
@@ -435,7 +476,7 @@ function Home() {
         <div className="heroProof">
           <span>{activity?.settledDuels ?? "-"} settled duels</span>
           <span>{activity?.countryCount ?? "-"} countries live</span>
-          <span>{activity?.activeWallets ?? activity?.mintedKickers ?? "-"} active wallets</span>
+          <span>{walletBreakdown}</span>
           <span>{activity?.mintedKickers ?? "-"} kickers minted</span>
           <span>game, not gamble</span>
         </div>
@@ -448,8 +489,9 @@ function Home() {
             <span><strong>{activity?.mintedKickers ?? "-"}</strong> kickers minted</span>
             <span><strong>{activity?.settledDuels ?? "-"}</strong> duels settled</span>
             <span><strong>{activity?.countryCount ?? "-"}</strong> countries live</span>
-            <span><strong>{activity?.activeWallets ?? "-"}</strong> active wallets</span>
+            <span><strong>{walletTotal}</strong> wallets <em>{walletDetail}</em></span>
           </div>
+          {proof?.wallets ? <p className="activityFootnote">{proof.wallets.exhibitionPurpose}</p> : null}
           <div className="countryRace">
             <div className="countryRaceHeader">
               <strong>Country race</strong>
@@ -1241,6 +1283,83 @@ function roundsFromDuelState(duel: any) {
   return { rounds, score: `${p1Score}-${p2Score}` };
 }
 
+function commitRevealFromDuelState(duel: any): CommitRevealPair {
+  return {
+    playerOne: {
+      commitHash: duel.p1.commitHash,
+      revealed: Boolean(duel.p1.revealed),
+      shots: Array.from(duel.p1.shots ?? []).map(Number),
+      saves: Array.from(duel.p1.saves ?? []).map(Number),
+    },
+    playerTwo: {
+      commitHash: duel.p2.commitHash,
+      revealed: Boolean(duel.p2.revealed),
+      shots: Array.from(duel.p2.shots ?? []).map(Number),
+      saves: Array.from(duel.p2.saves ?? []).map(Number),
+    },
+  };
+}
+
+function PlanGrid({ plan }: { plan?: CommitRevealPlan }) {
+  const shots = plan?.shots ?? [];
+  const saves = plan?.saves ?? [];
+  return (
+    <div className="planGrid">
+      <span>shots</span>
+      {Array.from({ length: 5 }, (_, index) => (
+        <strong title={directionName(shots[index])} key={`shot-${index}`}>
+          {directionArrow(shots[index])}
+        </strong>
+      ))}
+      <span>saves</span>
+      {Array.from({ length: 5 }, (_, index) => (
+        <strong title={directionName(saves[index])} key={`save-${index}`}>
+          {directionArrow(saves[index])}
+        </strong>
+      ))}
+    </div>
+  );
+}
+
+function CommitRevealMoment({
+  sideOne,
+  sideTwo,
+  commitReveal,
+}: {
+  sideOne: string;
+  sideTwo: string;
+  commitReveal?: CommitRevealPair;
+}) {
+  if (!commitReveal?.playerOne?.commitHash && !commitReveal?.playerTwo?.commitHash) return null;
+
+  return (
+    <article className="commitRevealMoment">
+      <div className="commitRevealHeader">
+        <span>Protocol moment</span>
+        <strong>Hidden hash becomes a five-round plan.</strong>
+      </div>
+      <div className="commitRevealColumns">
+        {[
+          { label: sideOne, plan: commitReveal.playerOne },
+          { label: sideTwo, plan: commitReveal.playerTwo },
+        ].map(({ label, plan }) => (
+          <div className="commitRevealCard" key={label}>
+            <div className="commitSide">
+              <span>{label} commit</span>
+              <code>{shortHash(plan?.commitHash)}</code>
+            </div>
+            <div className="revealArrow">→</div>
+            <div className="revealSide">
+              <span>{plan?.revealed ? "revealed plan" : "still hidden"}</span>
+              <PlanGrid plan={plan} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 function Replay() {
   const [rounds, setRounds] = useState<RoundResult[]>([]);
   const [animatedRound, setAnimatedRound] = useState(0);
@@ -1251,6 +1370,7 @@ function Replay() {
   const [replayDuelId, setReplayDuelId] = useState(String(PROOF_DUEL_ID));
   const [proofHref, setProofHref] = useState(txLink(PROOF_SETTLEMENT_TX));
   const [proofLabel, setProofLabel] = useState("Open proof tx");
+  const [commitReveal, setCommitReveal] = useState<CommitRevealPair | undefined>();
 
   useEffect(() => {
     async function loadReplay() {
@@ -1269,6 +1389,7 @@ function Replay() {
             args: [BigInt(latest.duelId)],
           })) as any;
           const replay = roundsFromDuelState(duel);
+          setCommitReveal(commitRevealFromDuelState(duel));
           setRounds(replay.rounds);
           setScore(replay.score);
           setSideOne(latest.p1Country);
@@ -1352,6 +1473,7 @@ function Replay() {
           <strong>{score}</strong>
           <span>{sideTwo}</span>
         </div>
+        <CommitRevealMoment sideOne={sideOne} sideTwo={sideTwo} commitReveal={commitReveal} />
         <div className="revealStage replayStageLarge">
           <div className="miniGoal">
             <div className={`miniKeeper keeper-${currentRound?.botGoal ? "wrong" : "save"}`}>GK</div>

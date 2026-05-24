@@ -32,6 +32,24 @@ const KNOWN_SETTLEMENT_TXS: Record<string, string> = {
   "30": "0xb45e5bd1d66eef3985af1c4f8aa491a69214d210ae7bebf1ceb8a42826a84c62",
   "31": "0xe6c8a0038c113243191d03820d0742ab123a045c42bd3d9270a8ff0c25f5ecae",
 };
+const EXHIBITION_WALLETS = new Set(
+  [
+    "0x50200E1ba23F6a4E58e09179E4e84DA8e796CbA8",
+    "0xC40f5523B1D4209C587156D19432601b371A64aA",
+    "0xAD2105762cBB0D43F3FF2FDF41f9C9F65b1A1D73",
+    "0x0cAcF1D14fcc710CF21C3425eD0c0Cc5E654760e",
+    "0x42432CC19d571506D991A13915FB746a923Da57F",
+    "0x280a4BBdF192D1c1fC9B11D1cf9d3266e6AcC21C",
+    "0xDa7E91a0Ce00CC692Fe139222075091f5b38Fe2D",
+    "0x1B6823fEFBFBdAeAeE7aC1cc7a21ABB0cA011Bd4",
+    "0x0dDC9E2c027480B35AaD502B977da6773e8A0349",
+    "0xdD7526E89b4371614253f81Fcfb5222e98d60C1B",
+    "0x96Ff784bf2fFddB3CFe5eD3a2F7fc06bC7A719A7",
+    "0x866bf1aDccC3c576c411f0E4091dec7d09241936",
+    "0xdb898e4768B900D4b741AC4F11D2d55F1847D813",
+    "0x6a46205542149FcC2722095DD83DE34265b2B18d",
+  ].map((address) => address.toLowerCase()),
+);
 
 const chain = defineChain({
   id: XLAYER_CHAIN_ID,
@@ -74,6 +92,22 @@ function txUrl(hash: string) {
 
 function field(value: any, key: string, index: number) {
   return value?.[key] ?? value?.[index];
+}
+
+function walletType(address?: string | null) {
+  if (!address) return "unknown";
+  return EXHIBITION_WALLETS.has(address.toLowerCase()) ? "exhibition" : "manual";
+}
+
+function planFields(player: any) {
+  const shots = field(player, "shots", 4) ?? [];
+  const saves = field(player, "saves", 5) ?? [];
+  return {
+    commitHash: field(player, "commitHash", 2),
+    revealed: Boolean(field(player, "revealed", 3)),
+    shots: Array.from({ length: 5 }, (_, index) => Number(shots[index] ?? 0)),
+    saves: Array.from({ length: 5 }, (_, index) => Number(saves[index] ?? 0)),
+  };
 }
 
 function scoreDuel(duel: any) {
@@ -195,6 +229,8 @@ export default async function handler(_: any, response: any) {
           statusLabel: statusLabels[status] ?? `Status ${status}`,
           playerOne,
           playerTwo,
+          playerOneWalletType: walletType(playerOne),
+          playerTwoWalletType: walletType(playerTwo),
           p1KickerTokenId,
           p2KickerTokenId,
           p1Country: countries[p1Kicker?.countryId] ?? null,
@@ -203,6 +239,10 @@ export default async function handler(_: any, response: any) {
           p2Revealed: Boolean(field(p2, "revealed", 3)),
           score: score ? `${score.p1Score}-${score.p2Score}` : null,
           draw: score?.draw ?? false,
+          commitReveal: {
+            playerOne: planFields(p1),
+            playerTwo: planFields(p2),
+          },
           settlementTx,
           settlementTxStatus: status !== 2 ? "not-settled" : settlementTx ? "available" : "unavailable",
         };
@@ -213,6 +253,8 @@ export default async function handler(_: any, response: any) {
   );
   const duels = duelReads.filter(Boolean);
   const settledDuels = duels.filter((duel) => duel.status === 2);
+  const manualWallets = Array.from(activeWallets).filter((address) => walletType(address) === "manual");
+  const exhibitionWallets = Array.from(activeWallets).filter((address) => walletType(address) === "exhibition");
   const statusCounts = duels.reduce((acc, duel) => {
     acc[duel.statusLabel] = (acc[duel.statusLabel] ?? 0) + 1;
     return acc;
@@ -220,7 +262,7 @@ export default async function handler(_: any, response: any) {
 
   response.status(200).json({
     project: "Panenka",
-    oneLine: "World Cup penalty shootout duels on X Layer: mint, commit hidden plans, reveal, settle, rank countries.",
+    oneLine: "Hidden-plan commit/reveal duels on X Layer, themed for the World Cup.",
     app: "https://panenka-alpha.vercel.app",
     repository: "https://github.com/dolepee/panenka",
     xAccount: "https://x.com/PanenkaGG",
@@ -275,9 +317,19 @@ export default async function handler(_: any, response: any) {
       countryCount: countryIds.size,
       indexedKickers: readableKickers.length,
       activeWallets: activeWallets.size,
+      manualWallets: manualWallets.length,
+      exhibitionWallets: exhibitionWallets.length,
+    },
+    wallets: {
+      total: activeWallets.size,
+      manual: manualWallets.length,
+      exhibition: exhibitionWallets.length,
+      exhibitionPurpose:
+        "Deterministic exhibition wallets demonstrate the full duel lifecycle at volume. Manual/tester wallets are counted separately.",
     },
     judgeSignals: {
-      innovation: "Penalty shootout as a hidden-plan commit/reveal game instead of another prediction market.",
+      innovation:
+        "The primitive is a commit/reveal hidden-plan duel: both players post a bytes32 commitment, then reveal a five-round shot and save plan. The contract proves neither player could change strategy after seeing the opponent. The penalty shootout is the World Cup wrapper.",
       marketPotential: "Country kickers, country leaderboard, X result sharing, and one-wallet bot duels create repeatable World Cup fan activity.",
       completion: "Live app, X Layer contracts, one-wallet bot path, latest replay, leaderboard, and machine-readable proof endpoint are all deployed.",
       xLayerUsage: "Minting, faucet claims, duel creation, joins, reveals, settlement, DuelCredit movement, and KickerNFT stat updates happen on X Layer testnet.",

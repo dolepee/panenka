@@ -1,22 +1,24 @@
 # Panenka
 
-Panenka turns penalty shootouts into onchain duels on X Layer. Players mint a country kicker, commit hidden shots and saves, reveal, and the contract settles a best-of-five shootout with onchain credits, NFT stats, and a leaderboard.
+![Panenka on X Layer](app/public/panenka-card.png)
 
-This MVP is a game, not a betting market. V1 uses non-transferable DuelCredit instead of real-money staking to keep the demo focused on World Cup gameplay, commit-reveal fairness, and X Layer transaction proof.
+Hidden-plan duels on X Layer. Two wallets commit a sealed five-round shootout strategy as a `bytes32` hash, reveal, and the contract settles best of five with onchain stats and a country leaderboard. No oracle, no live match feed, no betting.
 
-Live app: `https://panenka-alpha.vercel.app`
+The protocol primitive is the commit/reveal hidden-plan duel. The penalty shootout is the cultural wrapper that makes World Cup fans understand it instantly.
 
-Judge proof endpoint: `https://panenka-alpha.vercel.app/api/proof`
+- Live: `https://panenka-alpha.vercel.app`
+- Proof: `https://panenka-alpha.vercel.app/api/proof`
+- X: `https://x.com/PanenkaGG`
 
-Project X account: `https://x.com/PanenkaGG`
+V1 uses non-transferable DuelCredit instead of real-money staking to keep the demo focused on World Cup gameplay, commit/reveal fairness, and X Layer transaction proof.
 
 Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
 
 Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard` so the README does not go stale as testers create more duels, kickers, countries, and active player wallets.
 
-## Why This Fits X Cup
+## Why This Fits X Cup, By Criterion
 
-- **Innovation:** Panenka turns the World Cup penalty moment into a hidden-plan commit/reveal duel instead of another prediction market.
+- **Innovation:** the primitive is a commit/reveal hidden-plan duel. The same mechanic works for any zero-sum game with hidden choices; World Cup penalty shootouts are the first wrapper.
 - **Market potential:** country kickers, country leaderboards, result sharing, and bot duels give football fans a fast reason to create X Layer transactions.
 - **Completion:** contracts are deployed on X Layer testnet, the app is live, the bot path is playable with one wallet, and every settled duel has explorer proof.
 - **Safety:** Panenka is a game, not a gamble. DuelCredit is non-transferable in-game credit, with no real-money betting, no official World Cup/FIFA branding, and no player likenesses.
@@ -43,6 +45,8 @@ Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard`
 ## X Layer Testnet Proof
 
 Chain: X Layer testnet (`1952`)
+
+Exhibition runner wallets produce deterministic activity to demonstrate the full duel lifecycle at volume. Manual/tester wallets are flagged separately in `/api/proof` and `/api/leaderboard`.
 
 Contracts:
 

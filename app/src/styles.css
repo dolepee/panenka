@@ -237,6 +237,21 @@ h2 {
   letter-spacing: -0.06em;
 }
 
+.activityStats em {
+  color: rgba(248, 243, 231, 0.58);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.activityFootnote {
+  margin: 12px 0 0;
+  color: rgba(248, 243, 231, 0.58);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .activityLinks {
   display: flex;
   flex-wrap: wrap;
@@ -1037,6 +1052,118 @@ h2 {
   letter-spacing: -0.08em;
 }
 
+.commitRevealMoment {
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(68, 244, 196, 0.2);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(68, 244, 196, 0.18), transparent 18rem),
+    rgba(0, 0, 0, 0.24);
+}
+
+.commitRevealHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.commitRevealHeader span,
+.commitSide span,
+.revealSide span,
+.planGrid span {
+  color: rgba(248, 243, 231, 0.48);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.commitRevealHeader strong {
+  color: #f8ff70;
+  font-size: 20px;
+}
+
+.commitRevealColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.commitRevealCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.15fr);
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(248, 243, 231, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.commitSide,
+.revealSide {
+  min-width: 0;
+}
+
+.commitSide code {
+  display: block;
+  margin-top: 8px;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(68, 244, 196, 0.16);
+  border-radius: 12px;
+  color: #83ffe3;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.revealArrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  color: #061009;
+  background: #f8ff70;
+  font-weight: 900;
+  animation: revealPulse 1.5s ease both;
+}
+
+.planGrid {
+  display: grid;
+  grid-template-columns: 52px repeat(5, 1fr);
+  gap: 7px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.planGrid strong {
+  display: grid;
+  place-items: center;
+  min-height: 30px;
+  border-radius: 10px;
+  color: #061009;
+  background: #44f4c4;
+  font-size: 18px;
+}
+
+@keyframes revealPulse {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 .replayStageLarge {
   grid-template-columns: minmax(220px, 360px) 1fr;
 }
@@ -1185,7 +1312,13 @@ h2 {
   }
 
   .replayStageLarge,
-  .replayScore {
+  .replayScore,
+  .commitRevealColumns,
+  .commitRevealCard {
     grid-template-columns: 1fr;
+  }
+
+  .revealArrow {
+    transform: rotate(90deg);
   }
 }
