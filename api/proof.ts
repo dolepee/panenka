@@ -19,7 +19,8 @@ const PROOF_TXS = {
   playerOneReveal: "0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51",
   playerTwoRevealAndSettle: "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b",
 };
-const RECENT_LOG_LOOKBACK_BLOCKS = 2_500n;
+const RECENT_LOG_LOOKBACK_BLOCKS = 12_000n;
+const LOG_CHUNK_BATCH_SIZE = 12;
 const KNOWN_SETTLEMENT_TXS: Record<string, string> = {
   [PROOF_DUEL_ID]: PROOF_TXS.playerTwoRevealAndSettle,
   "22": "0x7a08f732edf8681145a2ded33b19da83c7e5dedabc98fdf6493a38f6055622cb",
@@ -115,14 +116,26 @@ async function getSettlementLogsChunked(client: any, fromBlock: bigint, toBlock:
   const chunks = [];
   for (let start = fromBlock; start <= toBlock; start += MAX_LOG_RANGE_BLOCKS + 1n) {
     const end = start + MAX_LOG_RANGE_BLOCKS > toBlock ? toBlock : start + MAX_LOG_RANGE_BLOCKS;
-    chunks.push(client.getLogs({
-      address: PENALTY_DUEL,
-      event: settledEvent,
-      fromBlock: start,
-      toBlock: end,
-    }));
+    chunks.push({ fromBlock: start, toBlock: end });
   }
-  return (await Promise.all(chunks)).flat();
+  const logs = [];
+  for (let index = 0; index < chunks.length; index += LOG_CHUNK_BATCH_SIZE) {
+    const batch = chunks.slice(index, index + LOG_CHUNK_BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(({ fromBlock, toBlock }) =>
+        client.getLogs({
+          address: PENALTY_DUEL,
+          event: settledEvent,
+          fromBlock,
+          toBlock,
+        }),
+      ),
+    );
+    for (const result of results) {
+      if (result.status === "fulfilled") logs.push(...result.value);
+    }
+  }
+  return logs;
 }
 
 function scoreDuel(duel: any) {
