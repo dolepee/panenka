@@ -12,13 +12,14 @@ const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0x33dc85f938f21c8cf83556f
 const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xebd15b2baa79a84d6e509b2dae12526abe5dacdb") as `0x${string}`;
 const PROOF_FROM_BLOCK = 31033500n;
 const PROOF_DUEL_ID = "1";
+const MAX_LOG_RANGE_BLOCKS = 99n;
 const PROOF_TXS = {
   create: "0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3",
   join: "0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6",
   playerOneReveal: "0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51",
   playerTwoRevealAndSettle: "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b",
 };
-const RECENT_LOG_LOOKBACK_BLOCKS = 10_000n;
+const RECENT_LOG_LOOKBACK_BLOCKS = 2_500n;
 const KNOWN_SETTLEMENT_TXS: Record<string, string> = {
   [PROOF_DUEL_ID]: PROOF_TXS.playerTwoRevealAndSettle,
   "22": "0x7a08f732edf8681145a2ded33b19da83c7e5dedabc98fdf6493a38f6055622cb",
@@ -110,6 +111,20 @@ function planFields(player: any) {
   };
 }
 
+async function getSettlementLogsChunked(client: any, fromBlock: bigint, toBlock: bigint) {
+  const chunks = [];
+  for (let start = fromBlock; start <= toBlock; start += MAX_LOG_RANGE_BLOCKS + 1n) {
+    const end = start + MAX_LOG_RANGE_BLOCKS > toBlock ? toBlock : start + MAX_LOG_RANGE_BLOCKS;
+    chunks.push(client.getLogs({
+      address: PENALTY_DUEL,
+      event: settledEvent,
+      fromBlock: start,
+      toBlock: end,
+    }));
+  }
+  return (await Promise.all(chunks)).flat();
+}
+
 function scoreDuel(duel: any) {
   const p1 = field(duel, "p1", 5);
   const p2 = field(duel, "p2", 6);
@@ -182,12 +197,7 @@ export default async function handler(_: any, response: any) {
       latestBlock > RECENT_LOG_LOOKBACK_BLOCKS
         ? latestBlock - RECENT_LOG_LOOKBACK_BLOCKS
         : PROOF_FROM_BLOCK;
-    const settlementLogs = await client.getLogs({
-      address: PENALTY_DUEL,
-      event: settledEvent,
-      fromBlock: fromBlock > PROOF_FROM_BLOCK ? fromBlock : PROOF_FROM_BLOCK,
-      toBlock: latestBlock,
-    });
+    const settlementLogs = await getSettlementLogsChunked(client, fromBlock > PROOF_FROM_BLOCK ? fromBlock : PROOF_FROM_BLOCK, latestBlock);
     settlementByDuelId = {
       ...settlementByDuelId,
       ...Object.fromEntries(

@@ -837,11 +837,16 @@ function Play({
     setJoinDuelId(String(duelId));
     const link = playLink(duelId);
     setInviteLink(link);
+    const botCap = botHealth?.publicStakeCap ? parseUnits(botHealth.publicStakeCap, 18) : parseUnits("1", 18);
+    const createdMessage =
+      stakeAmount > botCap
+        ? `Duel #${duelId} created with ${stake} DCR. This is above Panenka Bot's ${formatUnits(botCap, 18)} DCR cap, so send the invite to a human wallet.`
+        : `Duel #${duelId} created. Now click Bot joins this duel.`;
     try {
       await navigator.clipboard?.writeText(link);
-      notify(`Duel #${duelId} created. Invite link copied. Now click Bot joins this duel.`);
+      notify(`${createdMessage} Invite link copied.`);
     } catch {
-      notify(`Duel #${duelId} created. Now click Bot joins this duel.`);
+      notify(createdMessage);
     }
   }
 
@@ -1006,6 +1011,15 @@ function Play({
     }
     if (duelView?.id === duelId && duelView.p1.toLowerCase() === ZERO_ADDRESS) {
       notify("This duel was never created. Click Create hidden duel first, then let Panenka Bot join.");
+      return;
+    }
+    if (
+      action === "join" &&
+      botHealth &&
+      duelView?.id === duelId &&
+      Number(duelView.stake) > Number(botHealth.publicStakeCap)
+    ) {
+      notify(`Panenka Bot only joins public duels up to ${botHealth.publicStakeCap} DCR. Send this invite to a human wallet or create a 1 DCR bot duel.`);
       return;
     }
     if (action === "reveal" && duelView?.id === duelId && duelView.p2Revealed && !duelView.p1Revealed) {
@@ -1199,6 +1213,7 @@ function Play({
           </label>
           <p className="muted">
             Your wallet commits a hidden five-round plan. The chain sees only the hash until you reveal.
+            {botHealth ? ` Panenka Bot joins up to ${botHealth.publicStakeCap} DCR; larger entries need a human wallet.` : ""}
           </p>
           <button onClick={createDuel}>Create hidden duel</button>
           <div className="inviteBox">

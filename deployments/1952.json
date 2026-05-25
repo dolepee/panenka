@@ -29,15 +29,15 @@
     }
   },
   "latestProof": {
-    "duelId": "31",
-    "matchup": "France 5-0 Argentina",
-    "playerOne": "0x96Ff784bf2fFddB3CFe5eD3a2F7fc06bC7A719A7",
-    "playerTwo": "0x0dDC9E2c027480B35AaD502B977da6773e8A0349",
-    "settlement": "0xe6c8a0038c113243191d03820d0742ab123a045c42bd3d9270a8ff0c25f5ecae",
+    "duelId": "32",
+    "matchup": "France 3-3 Japan",
+    "playerOne": "0x2Ef3530496b22B2E87F1E5702e4D1FD6b3D05244",
+    "playerTwo": "0x5Cc5Bb39fD44115C1F9EBD9A33270b12E11583dB",
+    "settlement": "0xf2c69100ccfd67622320a4bd7a9df452af4752d367b7c85dacbc64e411232554",
     "readback": {
       "playerOneCountry": "France",
-      "playerTwoCountry": "Argentina",
-      "score": "5-0"
+      "playerTwoCountry": "Japan",
+      "score": "3-3"
     }
   }
 }
