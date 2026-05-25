@@ -329,6 +329,20 @@ function App() {
     setAccount(accounts[0] ?? "");
   }
 
+  async function disconnect() {
+    try {
+      const wallet = provider ?? window.okxwallet ?? window.ethereum;
+      await wallet?.request?.({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }],
+      });
+    } catch {
+      // Many injected wallets do not support permission revocation.
+    }
+    setProvider(null);
+    setAccount("");
+  }
+
   return (
     <main>
       <nav className="nav">
@@ -340,7 +354,14 @@ function App() {
           <a href="#replay">Replay</a>
           <a href="#leaderboard">Leaderboard</a>
           <a href="#me">Me</a>
-          <button onClick={connect}>{account ? short(account) : "Connect wallet"}</button>
+          {account ? (
+            <>
+              <button onClick={connect}>{short(account)}</button>
+              <button className="disconnectButton" onClick={disconnect}>Disconnect</button>
+            </>
+          ) : (
+            <button onClick={connect}>Connect wallet</button>
+          )}
         </div>
       </nav>
 
