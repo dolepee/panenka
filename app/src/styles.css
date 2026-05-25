@@ -907,6 +907,15 @@ h2 {
   background: linear-gradient(135deg, #44f4c4, #f8ff70);
 }
 
+.countryGrid button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.countryGrid button.selected:disabled {
+  opacity: 1;
+}
+
 .actionRow {
   display: flex;
   flex-wrap: wrap;

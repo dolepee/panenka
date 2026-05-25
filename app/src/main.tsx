@@ -139,6 +139,7 @@ const countries = [
   { id: 8, name: "USA" },
 ];
 const countryById = Object.fromEntries(countries.map((country) => [country.id, country.name]));
+const countryOptionById = Object.fromEntries(countries.map((country) => [country.id, country]));
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const PROOF_DUEL_ID = 1;
 const PROOF_SETTLEMENT_TX = "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b";
@@ -637,6 +638,7 @@ function Play({
   const [lastTx, setLastTx] = useState("");
   const [nextDuelId, setNextDuelId] = useState<number | null>(null);
   const [tokenId, setTokenId] = useState<bigint>(0n);
+  const [ownedCountry, setOwnedCountry] = useState("");
   const [balance, setBalance] = useState<bigint>(0n);
   const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
   const [botBusy, setBotBusy] = useState(false);
@@ -695,9 +697,23 @@ function Play({
           : Promise.resolve(0n),
       ]);
       setNextDuelId(Number(reads[0]));
-      setTokenId(reads[1] as bigint);
+      const currentTokenId = reads[1] as bigint;
+      setTokenId(currentTokenId);
       setBalance(reads[2] as bigint);
       setStoredPlanIds(account ? localPlanIds(account) : []);
+      if (currentTokenId > 0n) {
+        const stats = (await publicClient.readContract({
+          address: addresses.kickerNft!,
+          abi: kickerNftAbi,
+          functionName: "statsOf",
+          args: [currentTokenId],
+        })) as readonly unknown[];
+        const countryId = Number(stats[0]);
+        setOwnedCountry(countryById[countryId] ?? `Country ${countryId}`);
+        if (countryOptionById[countryId]) setSelectedCountry(countryOptionById[countryId]);
+      } else {
+        setOwnedCountry("");
+      }
     } catch (error) {
       notify(error instanceof Error ? error.message : "Read failed.");
     }
@@ -789,7 +805,7 @@ function Play({
 
   async function mintKicker() {
     if (tokenId > 0n) {
-      notify(`Kicker #${tokenId} is ready. Continue to Fuel and approve.`);
+      notify(`${ownedCountry || "Your"} kicker #${tokenId} is already minted. Country is fixed for this wallet on this deployment.`);
       return;
     }
     await write(
@@ -1252,16 +1268,25 @@ function Play({
       <div className="grid">
         <article className="panel">
           <h3>1. Wallet setup</h3>
-          <p className="muted">Each wallet needs exactly one country kicker. This is your duel identity and stat card.</p>
+          <p className="muted">
+            {tokenId > 0n
+              ? `This wallet already owns ${ownedCountry || "a"} kicker #${tokenId}. Country is fixed after mint; use a fresh wallet to represent another country.`
+              : "Pick a country before minting. Each wallet gets one country kicker; this becomes your duel identity and stat card."}
+          </p>
           <div className="countryGrid">
             {countries.map((country) => (
-              <button className={selectedCountry.id === country.id ? "selected" : ""} key={country.id} onClick={() => setSelectedCountry(country)}>
+              <button
+                className={selectedCountry.id === country.id ? "selected" : ""}
+                disabled={tokenId > 0n}
+                key={country.id}
+                onClick={() => setSelectedCountry(country)}
+              >
                 {country.name}
               </button>
             ))}
           </div>
           <div className="actionRow">
-            <button onClick={account ? mintKicker : connect}>{tokenId > 0n ? `Kicker #${tokenId}` : "Mint kicker"}</button>
+            <button onClick={account ? mintKicker : connect}>{tokenId > 0n ? `${ownedCountry || "Country"} Kicker #${tokenId}` : "Mint kicker"}</button>
           </div>
         </article>
 
