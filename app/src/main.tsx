@@ -298,6 +298,7 @@ function humanError(error: unknown) {
   if (message.includes("0xf0f96d35")) return "This browser has an old hidden plan for that duel. Create a fresh duel.";
   if (message.includes("0xf525e320")) return "That duel is not in the right state for this action.";
   if (message.includes("0xfaeb9c51")) return "That duel was never created. Create a fresh duel first.";
+  if (message.includes("0x9b0056ac")) return "Timeout is not reached yet. Wait 30 minutes after the first reveal, then claim the timeout win.";
   if (message.includes("0xddefae28")) return "You already minted a kicker on this deployment.";
   if (message.includes("0x13be252b")) return "Approve DuelCredit before creating or joining a duel.";
   if (message.includes("0xf4d678b8")) return "You need more DuelCredit. Claim DCR before creating or joining.";
@@ -618,6 +619,7 @@ function Play({
   const [balance, setBalance] = useState<bigint>(0n);
   const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
   const [botBusy, setBotBusy] = useState(false);
+  const [creatingDuel, setCreatingDuel] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
   const [duelView, setDuelView] = useState<DuelView | null>(null);
   const [settlementText, setSettlementText] = useState("");
@@ -811,6 +813,10 @@ function Play({
 
   async function createDuel() {
     if (!account) return;
+    if (creatingDuel) {
+      notify("Duel creation is already in progress. Wait for the wallet transaction to finish.");
+      return;
+    }
     const stakeAmount = parseUnits(stake || "0", 18);
     if (stakeAmount <= 0n) {
       notify("Duel entry must be greater than 0 DCR.");
@@ -820,6 +826,7 @@ function Play({
     const duelId = Number(await publicClient.readContract({ address: addresses.penaltyDuel!, abi: penaltyDuelAbi, functionName: "nextDuelId" }));
     const plan = { ...makePlan(account), duelId };
     const hash = commitment(account, plan.shots, plan.saves, plan.salt);
+    setCreatingDuel(true);
     const tx = await write(
       () =>
         walletClient().writeContract({
@@ -830,24 +837,41 @@ function Play({
         }),
       `Creating duel #${duelId}`,
     );
+    setCreatingDuel(false);
     if (!tx) return;
-    savePlan(account, plan);
+    const actualDuelId = await createdDuelIdFromReceipt(tx, duelId);
+    const storedPlan = { ...plan, duelId: actualDuelId };
+    savePlan(account, storedPlan);
     setStoredPlanIds(localPlanIds(account));
-    setRevealDuelId(String(duelId));
-    setJoinDuelId(String(duelId));
-    const link = playLink(duelId);
+    setRevealDuelId(String(actualDuelId));
+    setJoinDuelId(String(actualDuelId));
+    const link = playLink(actualDuelId);
     setInviteLink(link);
     const botCap = botHealth?.publicStakeCap ? parseUnits(botHealth.publicStakeCap, 18) : parseUnits("1", 18);
     const createdMessage =
       stakeAmount > botCap
-        ? `Duel #${duelId} created with ${stake} DCR. This is above Panenka Bot's ${formatUnits(botCap, 18)} DCR cap, so send the invite to a human wallet.`
-        : `Duel #${duelId} created. Now click Bot joins this duel.`;
+        ? `Duel #${actualDuelId} created with ${stake} DCR. This is above Panenka Bot's ${formatUnits(botCap, 18)} DCR cap, so send the invite to a human wallet.`
+        : `Duel #${actualDuelId} created. Now click Bot joins this duel.`;
     try {
       await navigator.clipboard?.writeText(link);
       notify(`${createdMessage} Invite link copied.`);
     } catch {
       notify(createdMessage);
     }
+  }
+
+  async function createdDuelIdFromReceipt(hash: `0x${string}`, fallbackDuelId: number) {
+    try {
+      const receipt = await publicClient.getTransactionReceipt({ hash });
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() !== addresses.penaltyDuel?.toLowerCase()) continue;
+        const decoded = decodeEventLog({ abi: penaltyDuelAbi, data: log.data, topics: [...log.topics] as any });
+        if (decoded.eventName === "DuelCreated") return Number((decoded.args as any).duelId);
+      }
+    } catch {
+      // Fallback keeps the UI usable if an RPC read races indexing.
+    }
+    return fallbackDuelId;
   }
 
   async function joinDuel() {
@@ -966,14 +990,20 @@ function Play({
           });
           continue;
         }
-        if (decoded.eventName !== "DuelSettled") continue;
-        const args = decoded.args as any;
-        const duelId = BigInt(args.duelId);
-        const p1Score = Number(args.p1Score);
-        const p2Score = Number(args.p2Score);
-        const winner = args.draw ? "Draw" : short(args.winner);
-        setSettlementText(args.draw ? `Duel #${duelId} settled as a ${p1Score}-${p2Score} draw.` : `Duel #${duelId} settled: ${winner} won ${p1Score}-${p2Score}.`);
-        void enrichSettlementText(duelId, args.winner, p1Score, p2Score, Boolean(args.draw));
+        if (decoded.eventName === "DuelSettled") {
+          const args = decoded.args as any;
+          const duelId = BigInt(args.duelId);
+          const p1Score = Number(args.p1Score);
+          const p2Score = Number(args.p2Score);
+          const winner = args.draw ? "Draw" : short(args.winner);
+          setSettlementText(args.draw ? `Duel #${duelId} settled as a ${p1Score}-${p2Score} draw.` : `Duel #${duelId} settled: ${winner} won ${p1Score}-${p2Score}.`);
+          void enrichSettlementText(duelId, args.winner, p1Score, p2Score, Boolean(args.draw));
+          continue;
+        }
+        if (decoded.eventName === "DuelForfeited") {
+          const args = decoded.args as any;
+          setSettlementText(`Duel #${BigInt(args.duelId)} forfeited. ${short(args.winner)} won after opponent timeout.`);
+        }
       } catch {
         // Ignore non-Panenka logs in the same transaction.
       }
@@ -1053,6 +1083,25 @@ function Play({
     } finally {
       setBotBusy(false);
     }
+  }
+
+  async function claimTimeoutWin() {
+    const duelId = Number(revealDuelId || joinDuelId);
+    if (!duelId) {
+      notify("Enter a duel ID first.");
+      return;
+    }
+    await write(
+      () =>
+        walletClient().writeContract({
+          address: addresses.penaltyDuel!,
+          abi: penaltyDuelAbi,
+          functionName: "claimForfeit",
+          args: [BigInt(duelId)],
+        }),
+      `Claiming timeout win for duel #${duelId}`,
+    );
+    await inspectDuel(String(duelId), true);
   }
 
   async function copyInvite() {
@@ -1215,7 +1264,7 @@ function Play({
             Your wallet commits a hidden five-round plan. The chain sees only the hash until you reveal.
             {botHealth ? ` Panenka Bot joins up to ${botHealth.publicStakeCap} DCR; larger entries need a human wallet.` : ""}
           </p>
-          <button onClick={createDuel}>Create hidden duel</button>
+          <button onClick={createDuel} disabled={creatingDuel}>{creatingDuel ? "Creating..." : "Create hidden duel"}</button>
           <div className="inviteBox">
             <span>Invite link</span>
             <code>{inviteLink || "Create a duel first, then send the generated link to your friend."}</code>
@@ -1248,6 +1297,7 @@ function Play({
           <div className="actionRow">
             <button onClick={revealDuel}>Reveal my plan</button>
             <button onClick={() => callBot("reveal")} disabled={botBusy}>{botBusy ? "Bot working..." : "Bot reveals and settles"}</button>
+            <button onClick={claimTimeoutWin}>Claim timeout win</button>
           </div>
         </article>
       </div>
