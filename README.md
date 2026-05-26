@@ -48,13 +48,28 @@ Chain: X Layer testnet (`1952`)
 
 Exhibition runner wallets produce deterministic activity to demonstrate the full duel lifecycle at volume. Manual/tester wallets are flagged separately in `/api/proof` and `/api/leaderboard`.
 
+### V1 and V2 evidence
+
+Panenka keeps the original V1 proof path instead of replacing it:
+
+- **V1 baseline proof:** the first full two-wallet duel (`#1`) is pinned below with create, join, reveal, settlement, DuelCredit, and KickerNFT stat readback.
+- **V1 volume proof:** deterministic exhibition wallets demonstrate the full lifecycle at scale and are labeled as `exhibition`.
+- **V2 tester proof:** external/manual testing is now visible separately from exhibition traffic. As of the latest verified snapshot on `2026-05-27`, `/api/proof` reports `24` settled duels, `14` active wallets, `6` manual/tester wallets, `8` exhibition wallets, `14` country kickers, and `8` countries represented.
+- **V2 human duel examples:** recent manual/tester duels include `#21` France `4-3` Japan, `#22` France `10-11` Brazil, `#23` USA `3-0` Japan, and `#24` USA `0-3` France, each with a settlement tx returned by `/api/proof`.
+
+The live endpoint remains the source of truth as more friends test the game:
+
+```bash
+npm run verify:live
+```
+
 Contracts:
 
 - `DuelCredit`: [`0xcc3fa00814d3577512d419154b8e2bd2c3566071`](https://www.okx.com/web3/explorer/xlayer-test/address/0xcc3fa00814d3577512d419154b8e2bd2c3566071)
 - `KickerNFT`: [`0xb1344061536397e422e4db5d536e14c9b73ca8ba`](https://www.okx.com/web3/explorer/xlayer-test/address/0xb1344061536397e422e4db5d536e14c9b73ca8ba)
 - `PenaltyDuel`: [`0xb2760c0d27af86ab4e6b7b5f9c5ff7e1015ce2aa`](https://www.okx.com/web3/explorer/xlayer-test/address/0xb2760c0d27af86ab4e6b7b5f9c5ff7e1015ce2aa)
 
-First settled duel proof:
+V1 baseline settled duel proof:
 
 - Duel: `#1`
 - Create duel tx: [`0xbc3118e3e017b37b35fd33efebec2326861e0c448b1bb5b73001d155120fa780`](https://www.okx.com/web3/explorer/xlayer-test/tx/0xbc3118e3e017b37b35fd33efebec2326861e0c448b1bb5b73001d155120fa780)
@@ -74,7 +89,7 @@ Verifier:
 npm run verify:duel
 ```
 
-The verifier checks the original full proof duel and the latest pinned settlement proof shown in the live replay.
+The verifier checks the original full proof duel and the pinned repo settlement proof. Use `npm run verify:live` for the current production activity and newest tester settlement.
 
 Expected success marker:
 
@@ -164,7 +179,7 @@ Fast judge path:
 
 1. Open `https://panenka-alpha.vercel.app/#replay` to watch the latest settled X Layer duel without a wallet.
 2. Open `https://panenka-alpha.vercel.app/#leaderboard` to see country rivalry and kicker rankings read from `KickerNFT`.
-3. Open `https://panenka-alpha.vercel.app/api/proof` for machine-readable X Layer proof and `npm run verify:duel` for repo replay.
+3. Open `https://panenka-alpha.vercel.app/api/proof` for machine-readable X Layer proof, `npm run verify:live` for current production activity, and `npm run verify:duel` for repo-pinned proof replay.
 
 ## Scope Guard
 

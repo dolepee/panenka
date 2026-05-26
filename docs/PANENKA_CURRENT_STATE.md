@@ -1,6 +1,6 @@
 # Panenka Current State
 
-Last updated: 2026-05-26.
+Last updated: 2026-05-27.
 
 Panenka is an onchain penalty shootout duel game for X Layer X Cup. It is positioned as a game, not a gambling market: country kicker NFTs, non-transferable DuelCredit, hidden commit/reveal plans, IFAB-style no-draw settlement, stats, leaderboard, and explorer proof.
 
@@ -53,7 +53,7 @@ npm run app:build
 npm run verify:duel
 ```
 
-`npm run verify:duel` checks both the original full proof duel and the latest pinned settlement proof shown in the live replay.
+`npm run verify:duel` checks both the original full proof duel and the pinned repo settlement proof. `npm run verify:live` checks the current production app, latest tester settlement, bot readiness, and live proof endpoints.
 
 Expected verifier marker:
 
@@ -65,15 +65,18 @@ PANENKA_DUEL_VALID
 
 The authoritative live values are returned by `https://panenka-alpha.vercel.app/api/proof` and `https://panenka-alpha.vercel.app/api/leaderboard`.
 
-Last verified V2 snapshot on 2026-05-26:
+Last verified V2 snapshot on 2026-05-27:
 
-- `11` country kickers minted.
-- `12` duels created.
-- `12` duels settled.
+- `14` country kickers minted.
+- `24` duels created.
+- `24` duels settled.
 - `8` countries represented in the country leaderboard.
 - `0` draw settlements in V2.
-- Latest settled duel: `#12`, Japan `4-3` Nigeria.
-- Latest settlement tx: `0xf2d25328442c24ac246f44994406882326325db3f411e3056b036080d43f1aac`.
+- `14` active wallets: `8` exhibition wallets and `6` manual/tester wallets.
+- External testing round: at least `3` friend/tester wallets were used alongside owner/manual QA wallets.
+- Latest settled duel: `#24`, USA `0-3` France.
+- Latest settlement tx: `0xe83808f3d3b12b75fa202b5f5dc0bb8435b1f49e29df11a93fa80ea6885ca4a7`.
+- Recent manual/tester duel examples: `#21` France `4-3` Japan, `#22` France `10-11` Brazil, `#23` USA `3-0` Japan, `#24` USA `0-3` France.
 
 Treat the live endpoints as canonical if this snapshot is lower than the current app.
 
@@ -96,10 +99,11 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 
 ## Activity Target Before Final Demo
 
-- At least `10` settled V2 duels. Achieved: `12`.
-- At least `10` country kickers. Achieved: `11`.
+- At least `10` settled V2 duels. Achieved: `24`.
+- At least `10` country kickers. Achieved: `14`.
 - At least `8` countries visible in the country leaderboard. Achieved: `8`.
-- At least `5` external tester wallets. Pending; collect through the local tester campaign.
+- At least `5` manual/tester wallets. Achieved: `6` currently counted by `/api/proof`.
+- At least `3` external tester wallets. Achieved through the friend testing round; keep collecting more before the final demo.
 - At least `3` public X posts showing rivalry results and tagging `@XLayerOfficial`.
 
 ## Intentional Scope Cuts
