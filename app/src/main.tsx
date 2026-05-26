@@ -1100,9 +1100,39 @@ function Play({
       };
       view.nextStep = duelNextStep(view, account);
       setDuelView(view);
+      if (view.status === 2) {
+        await showSettledDuelFromState(duelId, duel);
+        if (updateStatus) notify(`Duel #${duelId} is settled. Result loaded from X Layer.`);
+        return;
+      }
+      setSettlementText("");
+      setRoundResults([]);
       if (updateStatus) notify(view.nextStep);
     } catch (error) {
       if (updateStatus) notify(error instanceof Error ? error.message : "Could not read duel state.");
+    }
+  }
+
+  async function showSettledDuelFromState(duelId: number, duel: any) {
+    const replay = roundsFromDuelState(duel, BigInt(duelId));
+    setRoundResults(replay.rounds);
+
+    const [p1Stats, p2Stats] = await Promise.all([
+      publicClient.readContract({ address: addresses.kickerNft!, abi: kickerNftAbi, functionName: "statsOf", args: [duel.p1.kickerTokenId] }),
+      publicClient.readContract({ address: addresses.kickerNft!, abi: kickerNftAbi, functionName: "statsOf", args: [duel.p2.kickerTokenId] }),
+    ]);
+    const p1Country = countryById[Number((p1Stats as readonly unknown[])[0])] ?? `Country ${(p1Stats as readonly unknown[])[0]}`;
+    const p2Country = countryById[Number((p2Stats as readonly unknown[])[0])] ?? `Country ${(p2Stats as readonly unknown[])[0]}`;
+    const winnerCountry = replay.p1Score > replay.p2Score ? p1Country : p2Country;
+    setSettlementText(`Duel #${duelId}: ${p1Country} ${replay.score} ${p2Country}. Winner: ${winnerCountry}.`);
+
+    try {
+      const response = await fetch("/api/proof", { cache: "no-store" });
+      const body = await response.json();
+      const proofDuel = body.recentDuels?.find((entry: any) => String(entry.duelId) === String(duelId));
+      if (proofDuel?.settlementTx?.hash) setLastTx(proofDuel.settlementTx.hash);
+    } catch {
+      // Result reconstruction from chain state is enough if proof API indexing lags.
     }
   }
 
