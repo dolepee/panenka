@@ -1080,7 +1080,8 @@ function Play({
           : "Panenka Bot is not ready. Use a second wallet if you want to play now.",
       );
     } catch (error) {
-      setBotHealthStatus(error instanceof Error ? error.message : "Could not check Panenka Bot readiness.");
+      const message = error instanceof Error ? error.message : "Could not check Panenka Bot readiness.";
+      setBotHealthStatus(message.includes("<!doctype") || message.includes("Unexpected token") ? "Bot readiness checks on the live app." : message);
     }
   }
 
@@ -1563,27 +1564,69 @@ function Play({
     }
   }
 
-  return (
-    <section className="page">
-      <p className="eyebrow">Play path</p>
-      <h2>Play the bot now. Invite a friend later.</h2>
-      <p className="lede compact">
-        Your wallet creates and reveals. Panenka Bot joins as the opponent, or you send an invite link to a remote friend.
-        The contract still settles a real two-player commit-reveal shootout using non-transferable in-game credits.
-      </p>
+  const walletStatus = account ? short(account) : "Not connected";
+  const kickerStatus =
+    tokenId > 0n ? `#${tokenId} · ${ownedCountry || "Country selected"}` : "No kicker yet";
+  const dcrStatus = `${Number(formatUnits(balance, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR`;
+  const botStatus = botHealth
+    ? `${botHealth.ready ? "Ready" : "Not ready"} · ${Number(botHealth.duelCredit).toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      })} DCR`
+    : botHealthStatus;
+  const localPlanStatus = storedPlanIds.length ? `#${storedPlanIds.join(", #")}` : "None yet";
 
-      <div className="statusPanel">
+  return (
+    <section className="page playPage">
+      <div className="playHero">
+        <div className="playHeroCopy">
+          <p className="eyebrow">Match control room</p>
+          <h2>Take the penalty. Let X Layer settle it.</h2>
+          <p className="lede compact">
+            Pick a country, claim in-game DuelCredit, commit a hidden shootout plan, and reveal after the opponent joins.
+            The contract settles the shootout and updates the leaderboard on X Layer.
+          </p>
+          <div className="playHeroActions">
+            <button className="primary" onClick={account ? refresh : connect}>{account ? "Refresh wallet" : "Connect wallet"}</button>
+            <a className="secondary" href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">Get test OKB</a>
+          </div>
+        </div>
+
+        <aside className="playScoreboard">
+          <span>Current session</span>
+          <strong>{actionNotice}</strong>
+          <div className="scoreboardGrid">
+            <div>
+              <span>Wallet</span>
+              <strong>{walletStatus}</strong>
+            </div>
+            <div>
+              <span>Kicker</span>
+              <strong>{kickerStatus}</strong>
+            </div>
+            <div>
+              <span>DuelCredit</span>
+              <strong>{dcrStatus}</strong>
+            </div>
+            <div>
+              <span>Bot</span>
+              <strong>{botStatus}</strong>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className="statusPanel playStatusRail">
         <span>{hasContracts ? `X Layer ${XLAYER_CHAIN_ID}` : "Contracts not configured yet"}</span>
-        <span>{account ? short(account) : "Wallet not connected"}</span>
+        <span>{walletStatus}</span>
         <span>{nextDuelId ? `Next duel #${nextDuelId}` : "Awaiting deploy"}</span>
-        <span>{botHealth ? `Bot ${botHealth.ready ? "ready" : "not ready"} · ${Number(botHealth.duelCredit).toLocaleString(undefined, { maximumFractionDigits: 2 })} DCR` : botHealthStatus}</span>
-        <span>{storedPlanIds.length ? `Local reveal plan: #${storedPlanIds.join(", #")}` : "No local reveal plan yet"}</span>
+        <span>Bot status: {botStatus}</span>
+        <span>Local reveal plan: {localPlanStatus}</span>
         <strong>{status}</strong>
         {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">View last tx</a> : null}
       </div>
 
       {duelView ? (
-        <article className="duelState">
+        <article className="duelState playDuelState">
           <div>
             <span>Duel #{duelView.id}</span>
             <strong>{duelView.statusLabel}</strong>
@@ -1605,7 +1648,7 @@ function Play({
       ) : null}
 
       {settlementText ? (
-        <article className="settlementCard" ref={settlementRef}>
+        <article className="settlementCard resultCard" ref={settlementRef}>
           <span>Settled onchain</span>
           <strong>{settlementText}</strong>
           {roundResults.length ? (
@@ -1634,10 +1677,10 @@ function Play({
         </article>
       ) : null}
 
-      <article className="guideCard">
+      <article className="guideCard playGuide">
         <div>
-          <span className="badge">Remote play ready</span>
-          <h3>What you should click</h3>
+          <span className="badge">60-second route</span>
+          <h3>One clean flow, two ways to play.</h3>
         </div>
         <ol className="guideSteps">
           <li><strong>Fast path:</strong> mint if needed, claim DCR, approve, create a duel, click Bot joins, reveal, then Bot reveals.</li>
@@ -1649,8 +1692,11 @@ function Play({
       </article>
 
       <div className="grid">
-        <article className="panel">
-          <h3>1. Wallet setup</h3>
+        <article className="panel playStep countryStep">
+          <div className="stepHeader">
+            <span className="stepBadge">01</span>
+            <h3>Choose your country</h3>
+          </div>
           <p className="muted">
             {tokenId > 0n
               ? `This wallet owns kicker #${tokenId}. Current team: ${ownedCountry || "unknown"}. Pick another country and confirm the switch before creating a duel.`
@@ -1678,8 +1724,11 @@ function Play({
           </div>
         </article>
 
-        <article className="panel">
-          <h3>2. Fuel and approve</h3>
+        <article className="panel playStep fuelStep">
+          <div className="stepHeader">
+            <span className="stepBadge">02</span>
+            <h3>Fuel and approve</h3>
+          </div>
           <p className="muted">DuelCredit is in-game credit. It cannot move wallet-to-wallet; it routes only through the duel contract.</p>
           <div className="balance">{formatUnits(balance, 18)} DCR</div>
           <div className="actionRow">
@@ -1688,8 +1737,11 @@ function Play({
           </div>
         </article>
 
-        <article className="panel">
-          <h3>3. Create a duel</h3>
+        <article className="panel playStep createStep">
+          <div className="stepHeader">
+            <span className="stepBadge">03</span>
+            <h3>Create hidden plan</h3>
+          </div>
           <label>
             Duel entry (DCR)
             <input value={stake} onChange={(event) => setStake(event.target.value)} />
@@ -1706,8 +1758,11 @@ function Play({
           </div>
         </article>
 
-        <article className="panel">
-          <h3>4. Finish with bot or human</h3>
+        <article className="panel playStep finishStep">
+          <div className="stepHeader">
+            <span className="stepBadge">04</span>
+            <h3>Reveal and settle</h3>
+          </div>
           <label>
             Duel ID
             <input value={joinDuelId} onChange={(event) => setJoinDuelId(event.target.value)} placeholder="17" />
