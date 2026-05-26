@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createPublicClient, defineChain, formatUnits, http, keccak256, toHex, type Abi } from "viem";
+import { createPublicClient, defineChain, encodeAbiParameters, formatUnits, http, keccak256, toHex, type Abi } from "viem";
 
 type Artifact = { abi: Abi };
 type Deployment = {
@@ -50,7 +50,43 @@ function field(value: any, key: string, index: number) {
   return value?.[key] ?? value?.[index];
 }
 
-function scoreDuel(duelState: any) {
+function normalizePlan(values?: readonly unknown[]) {
+  return Array.from({ length: 10 }, (_, index) => Number(values?.[index] ?? 0));
+}
+
+function contractTiebreaksToP1(duelState: any, duelId: bigint) {
+  const p1 = field(duelState, "p1", 5);
+  const p2 = field(duelState, "p2", 6);
+  const p1Shots = normalizePlan(field(p1, "shots", 4));
+  const p1Saves = normalizePlan(field(p1, "saves", 5));
+  const p2Shots = normalizePlan(field(p2, "shots", 4));
+  const p2Saves = normalizePlan(field(p2, "saves", 5));
+  const hash = keccak256(
+    encodeAbiParameters(
+      [
+        { type: "uint256" },
+        { type: "bytes32" },
+        { type: "bytes32" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+      ],
+      [
+        duelId,
+        field(p1, "commitHash", 2),
+        field(p2, "commitHash", 2),
+        p1Shots,
+        p2Shots,
+        p1Saves,
+        p2Saves,
+      ],
+    ),
+  );
+  return BigInt(hash) % 2n === 0n;
+}
+
+function scoreDuel(duelState: any, duelId: bigint) {
   const p1 = field(duelState, "p1", 5);
   const p2 = field(duelState, "p2", 6);
   const p1Shots = field(p1, "shots", 4) ?? [];
@@ -70,7 +106,10 @@ function scoreDuel(duelState: any) {
       break;
     }
   }
-  if (p1Score === p2Score) p1Score += 1;
+  if (p1Score === p2Score) {
+    if (contractTiebreaksToP1(duelState, duelId)) p1Score += 1;
+    else p2Score += 1;
+  }
   return `${p1Score}-${p2Score}`;
 }
 
@@ -148,7 +187,7 @@ async function main() {
       `${label} settlement tx does not emit DuelSettled`,
     );
 
-    const score = scoreDuel(duelState);
+    const score = scoreDuel(duelState, BigInt(duelId));
     if (expectedScore) assertOk(score === expectedScore, `${label} score mismatch: expected ${expectedScore}, got ${score}`);
     return { duelState, p1, p2, score };
   }

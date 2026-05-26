@@ -24,5 +24,12 @@
   },
   "dependencies": {
     "viem": "^2.40.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "ws": "8.20.1",
+      "viem>ws": "8.20.1",
+      "isows>ws": "8.20.1"
+    }
   }
 }

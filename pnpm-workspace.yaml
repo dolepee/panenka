@@ -1,5 +1,10 @@
 packages:
   - app
 
+overrides:
+  ws: 8.20.1
+  viem>ws: 8.20.1
+  isows>ws: 8.20.1
+
 allowBuilds:
   esbuild: true

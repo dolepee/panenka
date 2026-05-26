@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   createPublicClient,
@@ -170,11 +170,50 @@ function directionName(direction?: number) {
   return "hidden";
 }
 
+function normalizePlan(values?: readonly unknown[]): DirectionPlan {
+  return Array.from({ length: 10 }, (_, index) => Number(values?.[index] ?? 0)) as DirectionPlan;
+}
+
+function contractTiebreaksToP1({
+  duelId,
+  p1CommitHash,
+  p2CommitHash,
+  p1Shots,
+  p2Shots,
+  p1Saves,
+  p2Saves,
+}: {
+  duelId: bigint;
+  p1CommitHash: `0x${string}`;
+  p2CommitHash: `0x${string}`;
+  p1Shots: DirectionPlan;
+  p2Shots: DirectionPlan;
+  p1Saves: DirectionPlan;
+  p2Saves: DirectionPlan;
+}) {
+  const hash = keccak256(
+    encodeAbiParameters(
+      [
+        { type: "uint256" },
+        { type: "bytes32" },
+        { type: "bytes32" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+      ],
+      [duelId, p1CommitHash, p2CommitHash, p1Shots, p2Shots, p1Saves, p2Saves],
+    ),
+  );
+  return BigInt(hash) % 2n === 0n;
+}
+
 function scoreShootout(
   p1Shots: number[],
   p1Saves: number[],
   p2Shots: number[],
   p2Saves: number[],
+  tieBreaksToP1 = true,
 ) {
   const rounds: RoundResult[] = [];
   let p1Score = 0;
@@ -205,7 +244,8 @@ function scoreShootout(
   }
   if (p1Score === p2Score) {
     tiebreak = true;
-    p1Score += 1;
+    if (tieBreaksToP1) p1Score += 1;
+    else p2Score += 1;
   }
   return { rounds, score: `${p1Score}-${p2Score}`, p1Score, p2Score, tiebreak };
 }
@@ -281,67 +321,220 @@ function laneRotation(direction?: number) {
   return "0deg";
 }
 
-function resultImageBlob(text: string, tx?: string): Promise<Blob> {
+function parseSettlementText(text: string) {
+  const match = text.match(/Duel #(\d+):\s+(.+?)\s+(\d+)-(\d+)\s+(.+?)\.\s+Winner:\s+(.+?)\./);
+  if (!match) {
+    return { duelId: "", sideOne: "Panenka", sideTwo: "X Layer", score: "settled", winner: "winner" };
+  }
+  return {
+    duelId: match[1],
+    sideOne: match[2],
+    sideTwo: match[5],
+    score: `${match[3]}-${match[4]}`,
+    winner: match[6],
+  };
+}
+
+function drawPillRow(context: CanvasRenderingContext2D, values: Array<number | undefined>, x: number, y: number) {
+  values.forEach((value, index) => {
+    const px = x + (index % 5) * 48;
+    const py = y + Math.floor(index / 5) * 42;
+    context.fillStyle = "#44f4c4";
+    context.beginPath();
+    context.roundRect(px, py, 36, 30, 14);
+    context.fill();
+    context.fillStyle = "#061009";
+    context.font = "800 20px Georgia, serif";
+    context.textAlign = "center";
+    context.fillText(directionArrow(value), px + 18, py + 22);
+  });
+  context.textAlign = "left";
+}
+
+function resultImageBlob(text: string, tx?: string, rounds: RoundResult[] = []): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = 1280;
-  canvas.height = 720;
+  canvas.height = 675;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Could not create image canvas.");
+  const parsed = parseSettlementText(text);
+  const latestRound = rounds[rounds.length - 1];
+  const p1Shots = rounds.map((round) => round.p1Shot);
+  const p1Saves = rounds.map((round) => round.p1Save);
+  const p2Shots = rounds.map((round) => round.p2Shot);
+  const p2Saves = rounds.map((round) => round.p2Save);
 
   const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-  gradient.addColorStop(0, "#07130c");
-  gradient.addColorStop(0.55, "#12542e");
-  gradient.addColorStop(1, "#e5ff5c");
+  gradient.addColorStop(0, "#071514");
+  gradient.addColorStop(0.45, "#0b1611");
+  gradient.addColorStop(1, "#151800");
   context.fillStyle = gradient;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.strokeStyle = "rgba(248, 243, 231, 0.28)";
-  context.lineWidth = 4;
-  for (let x = -80; x < canvas.width; x += 130) {
-    context.beginPath();
-    context.moveTo(x, 720);
-    context.lineTo(x + 420, 0);
-    context.stroke();
-  }
-  context.fillStyle = "rgba(0,0,0,0.32)";
-  context.fillRect(72, 78, 1136, 564);
-  context.strokeStyle = "rgba(248, 243, 231, 0.28)";
-  context.strokeRect(72, 78, 1136, 564);
+  context.fillStyle = "rgba(68,244,196,0.13)";
+  context.beginPath();
+  context.arc(80, 40, 320, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "rgba(248,255,112,0.11)";
+  context.beginPath();
+  context.arc(1210, 40, 260, 0, Math.PI * 2);
+  context.fill();
 
   context.fillStyle = "#f8f3e7";
-  context.font = "700 76px Georgia, serif";
-  context.fillText("Panenka", 118, 178);
-  context.font = "700 38px Georgia, serif";
-  context.fillText("onchain penalty duel on X Layer", 124, 232);
+  context.font = "900 54px Georgia, serif";
+  context.fillText(parsed.sideOne, 150, 76);
+  context.fillText(parsed.sideTwo, 920, 76);
+  context.fillStyle = "#44f4c4";
+  context.font = "900 84px Georgia, serif";
+  context.textAlign = "center";
+  context.fillText(parsed.score, 640, 86);
+  context.textAlign = "left";
 
-  context.font = "800 62px Georgia, serif";
-  const words = text.split(" ");
-  let line = "";
-  let y = 350;
-  for (const word of words) {
-    const next = `${line}${word} `;
-    if (context.measureText(next).width > 980 && line) {
-      context.fillText(line, 124, y);
-      line = `${word} `;
-      y += 78;
-    } else {
-      line = next;
-    }
-  }
-  context.fillText(line, 124, y);
+  context.fillStyle = "rgba(0,0,0,0.34)";
+  context.strokeStyle = "rgba(68,244,196,0.26)";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.roundRect(48, 118, 1184, 232, 22);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = "rgba(248,243,231,0.58)";
+  context.font = "900 14px ui-monospace, SFMono-Regular, Menlo, monospace";
+  context.fillText("PROTOCOL MOMENT", 82, 156);
+  context.fillStyle = "#f8ff70";
+  context.font = "900 22px Georgia, serif";
+  context.fillText("Hidden hash becomes a shootout plan.", 812, 158);
+
+  [
+    { label: parsed.sideOne, x: 78, shots: p1Shots, saves: p1Saves, hash: tx ? shortHash(tx) : "0xcommit..." },
+    { label: parsed.sideTwo, x: 650, shots: p2Shots, saves: p2Saves, hash: "revealed plan" },
+  ].forEach((panel) => {
+    context.fillStyle = "rgba(255,255,255,0.045)";
+    context.strokeStyle = "rgba(248,243,231,0.12)";
+    context.beginPath();
+    context.roundRect(panel.x, 176, 516, 142, 18);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "rgba(248,243,231,0.56)";
+    context.font = "900 13px ui-monospace, SFMono-Regular, Menlo, monospace";
+    context.fillText(`${panel.label.toUpperCase()} COMMIT`, panel.x + 20, 242);
+    context.fillStyle = "rgba(0,0,0,0.4)";
+    context.beginPath();
+    context.roundRect(panel.x + 20, 258, 206, 40, 10);
+    context.fill();
+    context.fillStyle = "#44f4c4";
+    context.font = "900 14px ui-monospace, SFMono-Regular, Menlo, monospace";
+    context.fillText(panel.hash, panel.x + 34, 283);
+    context.fillStyle = "#f8ff70";
+    context.beginPath();
+    context.arc(panel.x + 262, 276, 18, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#061009";
+    context.font = "900 18px Georgia, serif";
+    context.textAlign = "center";
+    context.fillText("→", panel.x + 262, 282);
+    context.textAlign = "left";
+    context.fillStyle = "rgba(248,243,231,0.62)";
+    context.font = "900 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+    context.fillText("SHOTS", panel.x + 304, 216);
+    drawPillRow(context, panel.shots, panel.x + 356, 198);
+    context.fillText("SAVES", panel.x + 304, 300);
+    drawPillRow(context, panel.saves, panel.x + 356, 282);
+  });
+
+  context.fillStyle = "rgba(0,0,0,0.24)";
+  context.strokeStyle = "rgba(68,244,196,0.24)";
+  context.beginPath();
+  context.roundRect(48, 372, 1184, 218, 22);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = "#10273d";
+  context.fillRect(78, 410, 370, 68);
+  context.fillStyle = "#1cae55";
+  context.fillRect(78, 478, 370, 82);
+  context.strokeStyle = "rgba(248,243,231,0.72)";
+  context.lineWidth = 4;
+  context.strokeRect(200, 432, 150, 72);
+  context.fillStyle = "#f8ff70";
+  context.beginPath();
+  context.arc(314, 470, 26, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "#061009";
+  context.font = "900 16px Georgia, serif";
+  context.textAlign = "center";
+  context.fillText("GK", 314, 476);
+  context.fillStyle = "#f8f3e7";
+  context.beginPath();
+  context.arc(382, 426, 10, 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = "rgba(248,255,112,0.72)";
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(254, 544);
+  context.lineTo(382, 426);
+  context.stroke();
+  context.textAlign = "left";
+
+  context.fillStyle = "#f8f3e7";
+  context.font = "900 38px Georgia, serif";
+  context.fillText(`Winner: ${parsed.winner}`, 494, 440);
+  context.font = "700 25px Georgia, serif";
+  context.fillStyle = "rgba(248,243,231,0.78)";
+  context.fillText(`Duel #${parsed.duelId || "?"} settled on X Layer testnet`, 494, 484);
+  context.fillText(
+    latestRound
+      ? `Final shown round: ${latestRound.round} · shot ${latestRound.p1Shot} vs save ${latestRound.p2Save}`
+      : "Commit, reveal, settle, leaderboard update.",
+    494,
+    524,
+  );
 
   context.fillStyle = "#44f4c4";
-  context.font = "700 30px Georgia, serif";
-  context.fillText("Hidden plan. Reveal. No draw. Settled onchain.", 124, 592);
+  context.font = "900 30px Georgia, serif";
+  context.fillText("Hidden plan. Reveal. No draw. Settled onchain.", 78, 638);
   if (tx) {
-    context.fillStyle = "rgba(248,243,231,0.72)";
+    context.fillStyle = "rgba(248,243,231,0.58)";
     context.font = "24px ui-monospace, SFMono-Regular, Menlo, monospace";
-    context.fillText(shortHash(tx), 124, 632);
+    context.fillText(shortHash(tx), 830, 638);
   }
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not export result image."))), "image/png", 0.95);
   });
+}
+
+async function saveBlob(blob: Blob, filename?: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename ?? (blob instanceof File ? blob.name : "panenka-result.png");
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function copyText(text: string) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to textarea-based copy for browsers with restricted clipboard permissions.
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  return copied;
 }
 
 function xLayerChainIdHex() {
@@ -798,6 +991,7 @@ function Play({
   const [actionNotice, setActionNotice] = useState("Create a duel, let the bot join, then reveal from this same browser.");
   const [botHealth, setBotHealth] = useState<BotHealth | null>(null);
   const [botHealthStatus, setBotHealthStatus] = useState("Checking Panenka Bot readiness...");
+  const settlementRef = useRef<HTMLElement | null>(null);
   const canWrite = Boolean(account && provider && hasContracts);
 
   function notify(message: string) {
@@ -830,6 +1024,11 @@ function Play({
     const timers = roundResults.slice(1).map((_, index) => window.setTimeout(() => setAnimatedRound(index + 2), (index + 1) * 700));
     return () => timers.forEach(window.clearTimeout);
   }, [roundResults]);
+
+  useEffect(() => {
+    if (!settlementText) return;
+    window.setTimeout(() => settlementRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  }, [settlementText]);
 
   async function refresh() {
     if (!hasContracts) return;
@@ -1331,12 +1530,11 @@ function Play({
     ]
       .filter(Boolean)
       .join("\n");
-    try {
-      await navigator.clipboard?.writeText(report);
+    if (await copyText(report)) {
       notify("Tester report copied. Send it back with your screenshot.");
-    } catch {
-      notify("Tester report ready. Copy the settlement text and tx link from this screen.");
+      return;
     }
+    notify("Clipboard blocked. Tester report was selected in a fallback text box.");
   }
 
   async function downloadResultImage() {
@@ -1345,7 +1543,7 @@ function Play({
       return;
     }
     try {
-      const blob = await resultImageBlob(settlementText, lastTx);
+      const blob = await resultImageBlob(settlementText, lastTx, roundResults);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -1358,27 +1556,34 @@ function Play({
     }
   }
 
-  async function shareResultImage() {
+  async function shareResultWithImage() {
     if (!settlementText) {
       notify("Settle a duel first, then share the result image.");
       return;
     }
+    const caption = `${settlementText}\n\nPlayed on @PanenkaGG, built on @XLayerOfficial.\nhttps://panenka-alpha.vercel.app\n\n#XLayerHackathon`;
+    const popup = window.open("", "_blank", "noopener,noreferrer");
     try {
-      const blob = await resultImageBlob(settlementText, lastTx);
+      const blob = await resultImageBlob(settlementText, lastTx, roundResults);
       const file = new File([blob], `panenka-duel-${revealDuelId || joinDuelId || "result"}.png`, { type: "image/png" });
       const sharePayload = {
         title: "Panenka result",
-        text: `${settlementText}\n\nPlayed on @PanenkaGG, built on @XLayerOfficial.`,
+        text: caption,
         files: [file],
       };
       if ((navigator as any).canShare?.(sharePayload)) {
+        popup?.close();
         await (navigator as any).share(sharePayload);
         notify("Result image shared.");
         return;
       }
-      await downloadResultImage();
-      window.open(shareResultUrl(settlementText), "_blank", "noopener,noreferrer");
+      await saveBlob(file);
+      await copyText(caption);
+      if (popup) popup.location.href = shareResultUrl(settlementText);
+      else window.open(shareResultUrl(settlementText), "_blank", "noopener,noreferrer");
+      notify("Result image downloaded and caption copied. Attach the image to the X post.");
     } catch (error) {
+      popup?.close();
       notify(error instanceof Error ? error.message : "Could not share result image.");
     }
   }
@@ -1425,7 +1630,7 @@ function Play({
       ) : null}
 
       {settlementText ? (
-        <article className="settlementCard">
+        <article className="settlementCard" ref={settlementRef}>
           <span>Settled onchain</span>
           <strong>{settlementText}</strong>
           {roundResults.length ? (
@@ -1449,9 +1654,8 @@ function Play({
             </div>
           ) : null}
           {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">Open settlement tx</a> : null}
-          <a href={shareResultUrl(settlementText)} target="_blank" rel="noreferrer">Share result on X</a>
+          <button onClick={shareResultWithImage}>Share result on X</button>
           <button onClick={downloadResultImage}>Download result image</button>
-          <button onClick={shareResultImage}>Share image if supported</button>
           <button onClick={copyTesterReport}>Copy tester report</button>
         </article>
       ) : null}
@@ -1578,12 +1782,25 @@ function Play({
   );
 }
 
-function roundsFromDuelState(duel: any) {
+function roundsFromDuelState(duel: any, duelId: bigint) {
+  const p1Shots = normalizePlan(duel.p1.shots);
+  const p1Saves = normalizePlan(duel.p1.saves);
+  const p2Shots = normalizePlan(duel.p2.shots);
+  const p2Saves = normalizePlan(duel.p2.saves);
   return scoreShootout(
-    Array.from(duel.p1.shots ?? []).map(Number),
-    Array.from(duel.p1.saves ?? []).map(Number),
-    Array.from(duel.p2.shots ?? []).map(Number),
-    Array.from(duel.p2.saves ?? []).map(Number),
+    p1Shots,
+    p1Saves,
+    p2Shots,
+    p2Saves,
+    contractTiebreaksToP1({
+      duelId,
+      p1CommitHash: duel.p1.commitHash,
+      p2CommitHash: duel.p2.commitHash,
+      p1Shots,
+      p2Shots,
+      p1Saves,
+      p2Saves,
+    }),
   );
 }
 
@@ -1692,7 +1909,7 @@ function Replay() {
             functionName: "getDuel",
             args: [BigInt(latest.duelId)],
           })) as any;
-          const replay = roundsFromDuelState(duel);
+          const replay = roundsFromDuelState(duel, BigInt(latest.duelId));
           setCommitReveal(commitRevealFromDuelState(duel));
           setRounds(replay.rounds);
           setScore(replay.score);

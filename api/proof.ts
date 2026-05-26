@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createPublicClient, defineChain, http, parseAbi, parseAbiItem } from "viem";
+import { createPublicClient, defineChain, encodeAbiParameters, http, keccak256, parseAbi, parseAbiItem } from "viem";
 
 const XLAYER_RPC_URL = process.env.XLAYER_RPC_URL ?? "https://testrpc.xlayer.tech/terigon";
 const XLAYER_CHAIN_ID = Number(process.env.XLAYER_CHAIN_ID ?? 1952);
@@ -110,6 +110,42 @@ function planFields(player: any) {
   };
 }
 
+function normalizePlan(values?: readonly unknown[]) {
+  return Array.from({ length: 10 }, (_, index) => Number(values?.[index] ?? 0));
+}
+
+function contractTiebreaksToP1(duel: any, duelId: bigint) {
+  const p1 = field(duel, "p1", 5);
+  const p2 = field(duel, "p2", 6);
+  const p1Shots = normalizePlan(field(p1, "shots", 4));
+  const p1Saves = normalizePlan(field(p1, "saves", 5));
+  const p2Shots = normalizePlan(field(p2, "shots", 4));
+  const p2Saves = normalizePlan(field(p2, "saves", 5));
+  const hash = keccak256(
+    encodeAbiParameters(
+      [
+        { type: "uint256" },
+        { type: "bytes32" },
+        { type: "bytes32" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+        { type: "uint8[10]" },
+      ],
+      [
+        duelId,
+        field(p1, "commitHash", 2),
+        field(p2, "commitHash", 2),
+        p1Shots,
+        p2Shots,
+        p1Saves,
+        p2Saves,
+      ],
+    ),
+  );
+  return BigInt(hash) % 2n === 0n;
+}
+
 async function getSettlementLogsChunked(client: any, fromBlock: bigint, toBlock: bigint) {
   const chunks = [];
   for (let start = fromBlock; start <= toBlock; start += MAX_LOG_RANGE_BLOCKS + 1n) {
@@ -136,7 +172,7 @@ async function getSettlementLogsChunked(client: any, fromBlock: bigint, toBlock:
   return logs;
 }
 
-function scoreDuel(duel: any) {
+function scoreDuel(duel: any, duelId: bigint) {
   const p1 = field(duel, "p1", 5);
   const p2 = field(duel, "p2", 6);
   const p1Shots = field(p1, "shots", 4) ?? [];
@@ -161,7 +197,10 @@ function scoreDuel(duel: any) {
       break;
     }
   }
-  if (p1Score === p2Score) p1Score += 1;
+  if (p1Score === p2Score) {
+    if (contractTiebreaksToP1(duel, duelId)) p1Score += 1;
+    else p2Score += 1;
+  }
   return { p1Score, p2Score, draw: false, rounds };
 }
 
@@ -251,7 +290,7 @@ export default async function handler(_: any, response: any) {
         const playerTwo = field(p2, "player", 0);
         if (playerOne && playerOne !== "0x0000000000000000000000000000000000000000") activeWallets.add(playerOne.toLowerCase());
         if (playerTwo && playerTwo !== "0x0000000000000000000000000000000000000000") activeWallets.add(playerTwo.toLowerCase());
-        const score = status === 2 ? scoreDuel(state) : null;
+        const score = status === 2 ? scoreDuel(state, duelId) : null;
         const settlementTx = status === 2 ? settlementByDuelId[duelId.toString()] ?? null : null;
         return {
           duelId: duelId.toString(),
