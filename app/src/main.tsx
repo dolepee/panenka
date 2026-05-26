@@ -982,6 +982,7 @@ function Play({
   const [ownedCountryId, setOwnedCountryId] = useState(0);
   const [balance, setBalance] = useState<bigint>(0n);
   const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
+  const [txBusy, setTxBusy] = useState(false);
   const [botBusy, setBotBusy] = useState(false);
   const [creatingDuel, setCreatingDuel] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
@@ -1145,6 +1146,10 @@ function Play({
   }
 
   async function write(action: () => Promise<`0x${string}`>, label: string) {
+    if (txBusy) {
+      notify("A wallet transaction is already in progress. Wait for it to finish before clicking again.");
+      return null;
+    }
     if (!canWrite) {
       notify(account ? "Deploy contract addresses before writing." : "Connect wallet first.");
       if (!account) await connect();
@@ -1155,6 +1160,7 @@ function Play({
       return;
     }
     try {
+      setTxBusy(true);
       await ensureXLayer(provider);
       notify(`${label}...`);
       const hash = await action();
@@ -1168,6 +1174,8 @@ function Play({
     } catch (error) {
       notify(humanError(error));
       return null;
+    } finally {
+      setTxBusy(false);
     }
   }
 
@@ -1712,7 +1720,7 @@ function Play({
             ))}
           </div>
           <div className="actionRow">
-            <button onClick={account ? mintKicker : connect}>
+            <button onClick={account ? mintKicker : connect} disabled={txBusy}>
               {tokenId > 0n
                 ? selectedCountry.id === ownedCountryId
                   ? `${ownedCountry || "Country"} Kicker #${tokenId}`
@@ -1730,8 +1738,8 @@ function Play({
           <p className="muted">DuelCredit is in-game credit. It cannot move wallet-to-wallet; it routes only through the duel contract.</p>
           <div className="balance">{formatUnits(balance, 18)} DCR</div>
           <div className="actionRow">
-            <button onClick={claimFaucet}>Claim 100 DCR</button>
-            <button onClick={approveCredits}>Approve duel contract</button>
+            <button onClick={claimFaucet} disabled={txBusy}>Claim 100 DCR</button>
+            <button onClick={approveCredits} disabled={txBusy}>Approve duel contract</button>
           </div>
         </article>
 
@@ -1748,7 +1756,7 @@ function Play({
             Your wallet commits a hidden shootout plan. The chain sees only the hash until you reveal.
             {botHealth ? ` Panenka Bot joins up to ${botHealth.publicStakeCap} DCR; larger entries need a human wallet.` : ""}
           </p>
-          <button onClick={createDuel} disabled={creatingDuel}>{creatingDuel ? "Creating..." : "Create hidden duel"}</button>
+          <button onClick={createDuel} disabled={creatingDuel || txBusy}>{creatingDuel || txBusy ? "Wallet pending..." : "Create hidden duel"}</button>
           <div className="inviteBox">
             <span>Invite link</span>
             <code>{inviteLink || "Create a duel first, then send the generated link to your friend."}</code>
@@ -1771,10 +1779,10 @@ function Play({
               : botHealthStatus}
           </p>
           <div className="actionRow">
-            <button onClick={() => callBot("join")} disabled={botBusy || (duelView?.id === Number(joinDuelId) && duelView.p1.toLowerCase() === ZERO_ADDRESS)}>
+            <button onClick={() => callBot("join")} disabled={botBusy || txBusy || (duelView?.id === Number(joinDuelId) && duelView.p1.toLowerCase() === ZERO_ADDRESS)}>
               {botBusy ? "Bot working..." : "Bot joins this duel"}
             </button>
-            <button onClick={joinDuel}>Human wallet joins</button>
+            <button onClick={joinDuel} disabled={txBusy}>Human wallet joins</button>
           </div>
           <label>
             Reveal duel ID
@@ -1782,9 +1790,9 @@ function Play({
           </label>
           <p className="actionNotice">{actionNotice}</p>
           <div className="actionRow">
-            <button onClick={revealDuel}>Reveal my plan</button>
-            <button onClick={() => callBot("reveal")} disabled={botBusy}>{botBusy ? "Bot working..." : "Bot reveals and settles"}</button>
-            <button onClick={claimTimeoutWin}>Claim timeout win</button>
+            <button onClick={revealDuel} disabled={txBusy}>Reveal my plan</button>
+            <button onClick={() => callBot("reveal")} disabled={botBusy || txBusy}>{botBusy ? "Bot working..." : "Bot reveals and settles"}</button>
+            <button onClick={claimTimeoutWin} disabled={txBusy}>Claim timeout win</button>
           </div>
         </article>
       </div>
