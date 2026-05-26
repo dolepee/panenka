@@ -820,15 +820,25 @@ function Home() {
   }
 
   return (
-    <section className="hero">
-      <div>
-        <p className="eyebrow">World Cup shootouts on X Layer</p>
-        <h1>Penalty duels on X Layer.</h1>
+    <section className="homePage">
+      <section className="hero heroV2">
+      <div className="heroCopy">
+        <p className="eyebrow">Playable country rivalry on X Layer</p>
+        <h1>Put your country on the spot.</h1>
         <p className="lede">
-          Mint a country kicker, commit hidden shots, and face Panenka Bot in under a minute. Every reveal, round, score,
-          credit transfer, and leaderboard move is verifiable on X Layer. No betting, no real-money stake, only
-          non-transferable in-game DuelCredit.
+          Panenka is a fast onchain penalty duel. Pick a country, commit a hidden shootout plan, reveal, and settle a winner
+          with non-transferable in-game DuelCredit. No betting, no oracle, no official tournament branding.
         </p>
+        <div className="ctaRow">
+          <a className="primary" href="#play">Start a 1 DCR bot duel</a>
+          <a className="secondary" href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">Get test OKB</a>
+          <a className="secondary subtle" href="#leaderboard">See country race</a>
+        </div>
+        <div className="onboardingStrip" aria-label="Quick start">
+          <span><strong>01</strong> Connect wallet</span>
+          <span><strong>02</strong> Mint country kicker</span>
+          <span><strong>03</strong> Bot joins and settles</span>
+        </div>
         <div className="heroProof">
           <span>{activity?.settledDuels ?? "-"} settled duels</span>
           <span>{activity?.countryCount ?? "-"} countries live</span>
@@ -914,12 +924,8 @@ function Home() {
             {!latestSettlementTx && proofDuelTx ? <a href={proofDuelTx} target="_blank" rel="noreferrer">Baseline proof tx</a> : null}
           </div>
         </article>
-        <div className="ctaRow">
-          <a className="primary" href="#play">Play the bot</a>
-          <a className="secondary" href="#leaderboard">View leaderboard</a>
-        </div>
       </div>
-      <div className="duelCard">
+      <div className="duelCard featuredDuel">
         <div className="duelTop">
           <span>Duel #{heroDuelId} settled</span>
           <span>Live X Layer state</span>
@@ -950,6 +956,7 @@ function Home() {
           )}
         </div>
       </div>
+      </section>
     </section>
   );
 }
