@@ -1594,6 +1594,12 @@ function Play({
         <aside className="playScoreboard">
           <span>Current session</span>
           <strong>{actionNotice}</strong>
+          <div className="playMiniPitch" aria-hidden="true">
+            <div className="miniGoal" />
+            <div className="miniKeeper">GK</div>
+            <div className="miniBall" />
+            <div className="miniPitchLine" />
+          </div>
           <div className="scoreboardGrid">
             <div>
               <span>Wallet</span>
@@ -1617,9 +1623,7 @@ function Play({
 
       <div className="statusPanel playStatusRail">
         <span>{hasContracts ? `X Layer ${XLAYER_CHAIN_ID}` : "Contracts not configured yet"}</span>
-        <span>{walletStatus}</span>
         <span>{nextDuelId ? `Next duel #${nextDuelId}` : "Awaiting deploy"}</span>
-        <span>Bot status: {botStatus}</span>
         <span>Local reveal plan: {localPlanStatus}</span>
         <strong>{status}</strong>
         {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">View last tx</a> : null}
@@ -1677,19 +1681,13 @@ function Play({
         </article>
       ) : null}
 
-      <article className="guideCard playGuide">
-        <div>
-          <span className="badge">60-second route</span>
-          <h3>One clean flow, two ways to play.</h3>
-        </div>
-        <ol className="guideSteps">
-          <li><strong>Fast path:</strong> mint if needed, claim DCR, approve, create a duel, click Bot joins, reveal, then Bot reveals.</li>
-          <li><strong>Need gas:</strong> use the official <a href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">X Layer testnet faucet</a> if your wallet has no OKB.</li>
-          <li><strong>Friend path:</strong> create a duel, copy the invite link, and send it to a remote friend. They join from their own wallet.</li>
-          <li><strong>Important:</strong> the same browser that created or joined must reveal, because the hidden plan is stored locally.</li>
-          <li><strong>Proof:</strong> after settlement, the app shows winner, score, resolved kick sequence, and the X Layer transaction.</li>
-        </ol>
-      </article>
+      <div className="playRoute" aria-label="Fast play route">
+        <span><strong>01</strong> Country kicker</span>
+        <span><strong>02</strong> Claim + approve DCR</span>
+        <span><strong>03</strong> Hidden plan commit</span>
+        <span><strong>04</strong> Reveal + settle</span>
+        <a href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">Need gas? Faucet</a>
+      </div>
 
       <div className="grid">
         <article className="panel playStep countryStep">
