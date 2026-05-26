@@ -337,23 +337,23 @@ function parseSettlementText(text: string) {
 
 function drawPillRow(context: CanvasRenderingContext2D, values: Array<number | undefined>, x: number, y: number) {
   values.forEach((value, index) => {
-    const px = x + (index % 5) * 48;
-    const py = y + Math.floor(index / 5) * 42;
+    const px = x + (index % 5) * 42;
+    const py = y + Math.floor(index / 5) * 36;
     context.fillStyle = "#44f4c4";
     context.beginPath();
-    context.roundRect(px, py, 36, 30, 14);
+    context.roundRect(px, py, 32, 28, 14);
     context.fill();
     context.fillStyle = "#061009";
-    context.font = "800 20px Georgia, serif";
+    context.font = "800 18px Georgia, serif";
     context.textAlign = "center";
-    context.fillText(directionArrow(value), px + 18, py + 22);
+    context.fillText(directionArrow(value), px + 16, py + 20);
   });
   context.textAlign = "left";
 }
 
 function resultImageBlob(text: string, tx?: string, rounds: RoundResult[] = []): Promise<Blob> {
   const canvas = document.createElement("canvas");
-  canvas.width = 1280;
+  canvas.width = 1200;
   canvas.height = 675;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Could not create image canvas.");
@@ -371,6 +371,21 @@ function resultImageBlob(text: string, tx?: string, rounds: RoundResult[] = []):
   context.fillStyle = gradient;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
+  context.strokeStyle = "rgba(248,243,231,0.055)";
+  context.lineWidth = 1;
+  for (let x = 0; x <= canvas.width; x += 44) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, canvas.height);
+    context.stroke();
+  }
+  for (let y = 0; y <= canvas.height; y += 44) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(canvas.width, y);
+    context.stroke();
+  }
+
   context.fillStyle = "rgba(68,244,196,0.13)";
   context.beginPath();
   context.arc(80, 40, 320, 0, Math.PI * 2);
@@ -381,38 +396,39 @@ function resultImageBlob(text: string, tx?: string, rounds: RoundResult[] = []):
   context.fill();
 
   context.fillStyle = "#f8f3e7";
-  context.font = "900 54px Georgia, serif";
-  context.fillText(parsed.sideOne, 150, 76);
-  context.fillText(parsed.sideTwo, 920, 76);
+  context.font = "900 50px Georgia, serif";
+  context.fillText(parsed.sideOne, 120, 76);
+  context.textAlign = "right";
+  context.fillText(parsed.sideTwo, 1080, 76);
   context.fillStyle = "#44f4c4";
-  context.font = "900 84px Georgia, serif";
+  context.font = "900 82px Georgia, serif";
   context.textAlign = "center";
-  context.fillText(parsed.score, 640, 86);
+  context.fillText(parsed.score, 600, 86);
   context.textAlign = "left";
 
   context.fillStyle = "rgba(0,0,0,0.34)";
   context.strokeStyle = "rgba(68,244,196,0.26)";
   context.lineWidth = 2;
   context.beginPath();
-  context.roundRect(48, 118, 1184, 232, 22);
+  context.roundRect(36, 118, 1128, 232, 22);
   context.fill();
   context.stroke();
 
   context.fillStyle = "rgba(248,243,231,0.58)";
   context.font = "900 14px ui-monospace, SFMono-Regular, Menlo, monospace";
-  context.fillText("PROTOCOL MOMENT", 82, 156);
+  context.fillText("PROTOCOL MOMENT", 70, 156);
   context.fillStyle = "#f8ff70";
   context.font = "900 22px Georgia, serif";
-  context.fillText("Hidden hash becomes a shootout plan.", 812, 158);
+  context.fillText("Hidden hash becomes a shootout plan.", 764, 158);
 
   [
-    { label: parsed.sideOne, x: 78, shots: p1Shots, saves: p1Saves, hash: tx ? shortHash(tx) : "0xcommit..." },
-    { label: parsed.sideTwo, x: 650, shots: p2Shots, saves: p2Saves, hash: "revealed plan" },
+    { label: parsed.sideOne, x: 64, shots: p1Shots, saves: p1Saves, hash: tx ? shortHash(tx) : "0xcommit..." },
+    { label: parsed.sideTwo, x: 636, shots: p2Shots, saves: p2Saves, hash: "revealed plan" },
   ].forEach((panel) => {
     context.fillStyle = "rgba(255,255,255,0.045)";
     context.strokeStyle = "rgba(248,243,231,0.12)";
     context.beginPath();
-    context.roundRect(panel.x, 176, 516, 142, 18);
+    context.roundRect(panel.x, 176, 500, 142, 18);
     context.fill();
     context.stroke();
     context.fillStyle = "rgba(248,243,231,0.56)";
@@ -436,67 +452,67 @@ function resultImageBlob(text: string, tx?: string, rounds: RoundResult[] = []):
     context.textAlign = "left";
     context.fillStyle = "rgba(248,243,231,0.62)";
     context.font = "900 12px ui-monospace, SFMono-Regular, Menlo, monospace";
-    context.fillText("SHOTS", panel.x + 304, 216);
-    drawPillRow(context, panel.shots, panel.x + 356, 198);
-    context.fillText("SAVES", panel.x + 304, 300);
-    drawPillRow(context, panel.saves, panel.x + 356, 282);
+    context.fillText("SHOTS", panel.x + 294, 216);
+    drawPillRow(context, panel.shots, panel.x + 344, 198);
+    context.fillText("SAVES", panel.x + 294, 292);
+    drawPillRow(context, panel.saves, panel.x + 344, 274);
   });
 
   context.fillStyle = "rgba(0,0,0,0.24)";
   context.strokeStyle = "rgba(68,244,196,0.24)";
   context.beginPath();
-  context.roundRect(48, 372, 1184, 218, 22);
+  context.roundRect(36, 372, 1128, 218, 22);
   context.fill();
   context.stroke();
 
   context.fillStyle = "#10273d";
-  context.fillRect(78, 410, 370, 68);
+  context.fillRect(76, 410, 356, 68);
   context.fillStyle = "#1cae55";
-  context.fillRect(78, 478, 370, 82);
+  context.fillRect(76, 478, 356, 82);
   context.strokeStyle = "rgba(248,243,231,0.72)";
   context.lineWidth = 4;
-  context.strokeRect(200, 432, 150, 72);
+  context.strokeRect(190, 432, 150, 72);
   context.fillStyle = "#f8ff70";
   context.beginPath();
-  context.arc(314, 470, 26, 0, Math.PI * 2);
+  context.arc(304, 470, 26, 0, Math.PI * 2);
   context.fill();
   context.fillStyle = "#061009";
   context.font = "900 16px Georgia, serif";
   context.textAlign = "center";
-  context.fillText("GK", 314, 476);
+  context.fillText("GK", 304, 476);
   context.fillStyle = "#f8f3e7";
   context.beginPath();
-  context.arc(382, 426, 10, 0, Math.PI * 2);
+  context.arc(372, 426, 10, 0, Math.PI * 2);
   context.fill();
   context.strokeStyle = "rgba(248,255,112,0.72)";
   context.lineWidth = 3;
   context.beginPath();
-  context.moveTo(254, 544);
-  context.lineTo(382, 426);
+  context.moveTo(244, 544);
+  context.lineTo(372, 426);
   context.stroke();
   context.textAlign = "left";
 
   context.fillStyle = "#f8f3e7";
   context.font = "900 38px Georgia, serif";
-  context.fillText(`Winner: ${parsed.winner}`, 494, 440);
+  context.fillText(`Winner: ${parsed.winner}`, 470, 440);
   context.font = "700 25px Georgia, serif";
   context.fillStyle = "rgba(248,243,231,0.78)";
-  context.fillText(`Duel #${parsed.duelId || "?"} settled on X Layer testnet`, 494, 484);
+  context.fillText(`Duel #${parsed.duelId || "?"} settled on X Layer testnet`, 470, 484);
   context.fillText(
     latestRound
       ? `Final shown round: ${latestRound.round} · shot ${latestRound.p1Shot} vs save ${latestRound.p2Save}`
       : "Commit, reveal, settle, leaderboard update.",
-    494,
+    470,
     524,
   );
 
   context.fillStyle = "#44f4c4";
   context.font = "900 30px Georgia, serif";
-  context.fillText("Hidden plan. Reveal. No draw. Settled onchain.", 78, 638);
+  context.fillText("Hidden plan. Reveal. No draw. Settled onchain.", 76, 638);
   if (tx) {
     context.fillStyle = "rgba(248,243,231,0.58)";
     context.font = "24px ui-monospace, SFMono-Regular, Menlo, monospace";
-    context.fillText(shortHash(tx), 830, 638);
+    context.fillText(shortHash(tx), 776, 638);
   }
 
   return new Promise((resolve, reject) => {
@@ -513,28 +529,6 @@ async function saveBlob(blob: Blob, filename?: string) {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
-}
-
-async function copyText(text: string) {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Fall through to textarea-based copy for browsers with restricted clipboard permissions.
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "true");
-  textarea.style.position = "fixed";
-  textarea.style.left = "-9999px";
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand("copy");
-  textarea.remove();
-  return copied;
 }
 
 function xLayerChainIdHex() {
@@ -812,8 +806,8 @@ function Home() {
     "",
     `App: ${location.origin}`,
     "",
-    "After settlement, click Copy tester report and send the text plus a screenshot. No betting and no real-money stake.",
-    "If you post the result, tag @PanenkaGG and @XLayerOfficial.",
+    "After settlement, download the result image and post or send it back with the settlement tx. No betting and no real-money stake.",
+    "If you post the result, use Share result on X, attach the downloaded image, and tag @PanenkaGG + @XLayerOfficial.",
   ].join("\n");
 
   async function copyTesterInvite() {
@@ -903,7 +897,7 @@ function Home() {
               <li>If your wallet has no gas, claim testnet OKB from the official X Layer faucet.</li>
               <li>Mint a country kicker and claim DuelCredit.</li>
               <li>Create a 1 DCR duel, let Panenka Bot join, reveal, then let the bot settle.</li>
-              <li>Copy the tester report and screenshot the result.</li>
+              <li>Download the result image, then share the X post with the image attached.</li>
             </ol>
             <div className="testerActions">
               <button onClick={copyTesterInvite}>Copy tester invite</button>
@@ -1518,25 +1512,6 @@ function Play({
     }
   }
 
-  async function copyTesterReport() {
-    if (!settlementText) {
-      notify("Settle a duel first, then copy the tester report.");
-      return;
-    }
-    const report = [
-      settlementText,
-      lastTx ? `Settlement tx: ${txLink(lastTx)}` : null,
-      `App: ${location.origin}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-    if (await copyText(report)) {
-      notify("Tester report copied. Send it back with your screenshot.");
-      return;
-    }
-    notify("Clipboard blocked. Tester report was selected in a fallback text box.");
-  }
-
   async function downloadResultImage() {
     if (!settlementText) {
       notify("Settle a duel first, then download the result image.");
@@ -1544,47 +1519,10 @@ function Play({
     }
     try {
       const blob = await resultImageBlob(settlementText, lastTx, roundResults);
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `panenka-duel-${revealDuelId || joinDuelId || "result"}.png`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      await saveBlob(blob, `panenka-duel-${revealDuelId || joinDuelId || "result"}.png`);
       notify("Result image downloaded. Attach it to your X post for better visibility.");
     } catch (error) {
       notify(error instanceof Error ? error.message : "Could not generate result image.");
-    }
-  }
-
-  async function shareResultWithImage() {
-    if (!settlementText) {
-      notify("Settle a duel first, then share the result image.");
-      return;
-    }
-    const caption = `${settlementText}\n\nPlayed on @PanenkaGG, built on @XLayerOfficial.\nhttps://panenka-alpha.vercel.app\n\n#XLayerHackathon`;
-    const popup = window.open("", "_blank", "noopener,noreferrer");
-    try {
-      const blob = await resultImageBlob(settlementText, lastTx, roundResults);
-      const file = new File([blob], `panenka-duel-${revealDuelId || joinDuelId || "result"}.png`, { type: "image/png" });
-      const sharePayload = {
-        title: "Panenka result",
-        text: caption,
-        files: [file],
-      };
-      if ((navigator as any).canShare?.(sharePayload)) {
-        popup?.close();
-        await (navigator as any).share(sharePayload);
-        notify("Result image shared.");
-        return;
-      }
-      await saveBlob(file);
-      await copyText(caption);
-      if (popup) popup.location.href = shareResultUrl(settlementText);
-      else window.open(shareResultUrl(settlementText), "_blank", "noopener,noreferrer");
-      notify("Result image downloaded and caption copied. Attach the image to the X post.");
-    } catch (error) {
-      popup?.close();
-      notify(error instanceof Error ? error.message : "Could not share result image.");
     }
   }
 
@@ -1654,9 +1592,8 @@ function Play({
             </div>
           ) : null}
           {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">Open settlement tx</a> : null}
-          <button onClick={shareResultWithImage}>Share result on X</button>
+          <a href={shareResultUrl(settlementText)} target="_blank" rel="noreferrer">Share result on X</a>
           <button onClick={downloadResultImage}>Download result image</button>
-          <button onClick={copyTesterReport}>Copy tester report</button>
         </article>
       ) : null}
 
