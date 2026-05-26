@@ -65,7 +65,7 @@ contract PanenkaFlowTest {
     }
 
     function testCreateJoinRevealAndSettle() public {
-        (uint8[5] memory aliceShots, uint8[5] memory aliceSaves, uint8[5] memory bobShots, uint8[5] memory bobSaves) =
+        (uint8[10] memory aliceShots, uint8[10] memory aliceSaves, uint8[10] memory bobShots, uint8[10] memory bobSaves) =
             _nonDrawPlans();
         bytes32 aliceSalt = keccak256("alice salt");
         bytes32 bobSalt = keccak256("bob salt");
@@ -97,8 +97,8 @@ contract PanenkaFlowTest {
     }
 
     function testWrongRevealFails() public {
-        uint8[5] memory shots = [uint8(0), 1, 2, 0, 1];
-        uint8[5] memory saves = [uint8(2), 2, 1, 1, 0];
+        uint8[10] memory shots = [uint8(0), 1, 2, 0, 1, 2, 0, 1, 2, 0];
+        uint8[10] memory saves = [uint8(2), 2, 1, 1, 0, 0, 1, 2, 0, 1];
         bytes32 salt = keccak256("alice salt");
         bytes32 aliceCommitment = _commitment(alice, shots, saves, salt);
 
@@ -120,9 +120,9 @@ contract PanenkaFlowTest {
         duel.joinDuel(99, bobKicker, keccak256("bob commitment"));
     }
 
-    function testDrawRefundsBothPlayers() public {
-        uint8[5] memory shots = [uint8(0), 1, 2, 0, 1];
-        uint8[5] memory saves = [uint8(0), 1, 2, 0, 1];
+    function testTiedAfterTenUsesDeterministicTiebreak() public {
+        uint8[10] memory shots = [uint8(0), 1, 2, 0, 1, 2, 0, 1, 2, 0];
+        uint8[10] memory saves = [uint8(0), 1, 2, 0, 1, 2, 0, 1, 2, 0];
         bytes32 aliceSalt = keccak256("alice salt");
         bytes32 bobSalt = keccak256("bob salt");
         bytes32 aliceCommitment = _commitment(alice, shots, saves, aliceSalt);
@@ -139,17 +139,21 @@ contract PanenkaFlowTest {
         vm.prank(bob);
         duel.reveal(duelId, shots, saves, bobSalt);
 
-        assertEq(credit.balanceOf(alice), 100 ether);
-        assertEq(credit.balanceOf(bob), 100 ether);
+        assertTrue(
+            (credit.balanceOf(alice) == 105 ether && credit.balanceOf(bob) == 95 ether)
+                || (credit.balanceOf(alice) == 95 ether && credit.balanceOf(bob) == 105 ether)
+        );
         (, uint32 aliceWins,,,) = kicker.statsOf(aliceKicker);
         (,, uint32 bobLosses,,) = kicker.statsOf(bobKicker);
-        assertEq(uint256(aliceWins), 0);
-        assertEq(uint256(bobLosses), 0);
+        (, uint32 bobWins,,,) = kicker.statsOf(bobKicker);
+        (,, uint32 aliceLosses,,) = kicker.statsOf(aliceKicker);
+        assertEq(uint256(aliceWins + bobWins), 1);
+        assertEq(uint256(aliceLosses + bobLosses), 1);
     }
 
     function testCancelUnjoinedAfterTimeout() public {
-        uint8[5] memory shots = [uint8(0), 1, 2, 0, 1];
-        uint8[5] memory saves = [uint8(2), 2, 1, 1, 0];
+        uint8[10] memory shots = [uint8(0), 1, 2, 0, 1, 2, 0, 1, 2, 0];
+        uint8[10] memory saves = [uint8(2), 2, 1, 1, 0, 0, 1, 2, 0, 1];
         bytes32 aliceCommitment = _commitment(alice, shots, saves, keccak256("salt"));
 
         vm.prank(alice);
@@ -164,7 +168,7 @@ contract PanenkaFlowTest {
     }
 
     function testClaimForfeitAfterOneReveal() public {
-        (uint8[5] memory aliceShots, uint8[5] memory aliceSaves, uint8[5] memory bobShots, uint8[5] memory bobSaves) =
+        (uint8[10] memory aliceShots, uint8[10] memory aliceSaves, uint8[10] memory bobShots, uint8[10] memory bobSaves) =
             _nonDrawPlans();
         bytes32 aliceSalt = keccak256("alice salt");
         bytes32 bobSalt = keccak256("bob salt");
@@ -192,18 +196,26 @@ contract PanenkaFlowTest {
         assertEq(uint256(bobLosses), 1);
     }
 
+    function testPlayerCanChangeCountry() public {
+        vm.prank(alice);
+        kicker.changeCountry(4);
+
+        (uint8 countryId,,,,) = kicker.statsOf(aliceKicker);
+        assertEq(uint256(countryId), 4);
+    }
+
     function _nonDrawPlans()
         internal
         pure
-        returns (uint8[5] memory aliceShots, uint8[5] memory aliceSaves, uint8[5] memory bobShots, uint8[5] memory bobSaves)
+        returns (uint8[10] memory aliceShots, uint8[10] memory aliceSaves, uint8[10] memory bobShots, uint8[10] memory bobSaves)
     {
-        aliceShots = [uint8(0), 1, 2, 0, 1];
-        aliceSaves = [uint8(0), 0, 0, 0, 0];
-        bobShots = [uint8(0), 0, 0, 0, 0];
-        bobSaves = [uint8(1), 1, 1, 1, 1];
+        aliceShots = [uint8(0), 1, 2, 0, 1, 2, 0, 1, 2, 0];
+        aliceSaves = [uint8(0), 0, 0, 0, 0, 1, 1, 1, 1, 1];
+        bobShots = [uint8(0), 0, 0, 0, 0, 1, 1, 1, 1, 1];
+        bobSaves = [uint8(1), 2, 0, 1, 2, 0, 1, 2, 0, 1];
     }
 
-    function _commitment(address player, uint8[5] memory shots, uint8[5] memory saves, bytes32 salt)
+    function _commitment(address player, uint8[10] memory shots, uint8[10] memory saves, bytes32 salt)
         internal
         pure
         returns (bytes32)
@@ -213,5 +225,9 @@ contract PanenkaFlowTest {
 
     function assertEq(uint256 a, uint256 b) internal pure {
         if (a != b) revert("assert uint");
+    }
+
+    function assertTrue(bool value) internal pure {
+        if (!value) revert("assert true");
     }
 }

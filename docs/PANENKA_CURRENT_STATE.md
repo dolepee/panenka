@@ -1,8 +1,8 @@
 # Panenka Current State
 
-Last updated: 2026-05-23.
+Last updated: 2026-05-26.
 
-Panenka is an onchain penalty shootout duel game for X Layer X Cup. It is positioned as a game, not a gambling market: country kicker NFTs, non-transferable DuelCredit, hidden commit/reveal plans, best-of-five settlement, stats, leaderboard, and explorer proof.
+Panenka is an onchain penalty shootout duel game for X Layer X Cup. It is positioned as a game, not a gambling market: country kicker NFTs, non-transferable DuelCredit, hidden commit/reveal plans, IFAB-style no-draw settlement, stats, leaderboard, and explorer proof.
 
 ## Live Surfaces
 
@@ -20,24 +20,25 @@ Panenka is an onchain penalty shootout duel game for X Layer X Cup. It is positi
 
 ## Contracts
 
-- `DuelCredit`: `0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98`
-- `KickerNFT`: `0x33dc85f938f21c8cf83556f444d16e61377a35a3`
-- `PenaltyDuel`: `0xebd15b2baa79a84d6e509b2dae12526abe5dacdb`
+- `DuelCredit`: `0xcc3fa00814d3577512d419154b8e2bd2c3566071`
+- `KickerNFT`: `0xb1344061536397e422e4db5d536e14c9b73ca8ba`
+- `PenaltyDuel`: `0xb2760c0d27af86ab4e6b7b5f9c5ff7e1015ce2aa`
 
 ## Settled Proof Duel
 
 - Duel: `#1`
 - Player one: `0x648C200356146f35beE46d59990F07eD6aaff8f0`
 - Player two: `0xb072d8A4d85D395bAc3ec7cc9B660037C06D2224`
-- Create duel tx: `0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3`
-- Join duel tx: `0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6`
-- Player one reveal tx: `0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51`
-- Player two reveal and settlement tx: `0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b`
+- Create duel tx: `0xbc3118e3e017b37b35fd33efebec2326861e0c448b1bb5b73001d155120fa780`
+- Join duel tx: `0xf833710748cd673a75c2de08207f9e984083d5fb226cc7364acd8609cad18629`
+- Player one reveal tx: `0x4d80a46b57c9e842794cf2a051dfe2f0474b57be3202168bff5ae3eebded8fee`
+- Player two reveal and settlement tx: `0x591cfb717624c02d2862b805237d34f9d151f3228d70bc9e7b1dd414e13c9181`
 
 Recorded readback immediately after that settlement:
 
 - Nigeria kicker: `105` DuelCredit, `1` win, `1` streak.
 - France kicker: `95` DuelCredit, `1` loss.
+- Score: Nigeria `3-0` France, stopped early once France could no longer catch up.
 
 ## Verification
 
@@ -64,15 +65,15 @@ PANENKA_DUEL_VALID
 
 The authoritative live values are returned by `https://panenka-alpha.vercel.app/api/proof` and `https://panenka-alpha.vercel.app/api/leaderboard`.
 
-Last verified pre-submission snapshot on 2026-05-23:
+Last verified V2 snapshot on 2026-05-26:
 
-- `20` country kickers minted.
-- `31` duels created.
-- `30` duels settled.
+- `11` country kickers minted.
+- `12` duels created.
+- `12` duels settled.
 - `8` countries represented in the country leaderboard.
-- `3` level-2 kickers from repeated onchain wins.
-- Latest settled duel: `#31`, France `5-0` Argentina.
-- Latest settlement tx: `0xe6c8a0038c113243191d03820d0742ab123a045c42bd3d9270a8ff0c25f5ecae`.
+- `0` draw settlements in V2.
+- Latest settled duel: `#12`, Japan `4-3` Nigeria.
+- Latest settlement tx: `0xf2d25328442c24ac246f44994406882326325db3f411e3056b036080d43f1aac`.
 
 Treat the live endpoints as canonical if this snapshot is lower than the current app.
 
@@ -86,16 +87,17 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 - Country leaderboard aggregates wins, losses, streaks, and kicker count per country from live `KickerNFT` state.
 - Country leaderboard rows include X challenge links for shareable rivalry posts.
 - Share links let players post settled results to X with `@PanenkaGG`, `@XLayerOfficial`, and `#XLayerHackathon` included.
+- Settled duel screen includes a grass-pitch shootout visual, downloadable result card, and browser-native image share where supported.
 - Settled duel screen includes a copyable tester report so real testers can send back result and settlement tx quickly.
 - Panenka Bot is capped to public exhibition duels of `1 DCR` by default so the one-wallet demo path stays reliable during public testing.
 - `GET /api/bot-opponent` exposes Panenka Bot readiness, public stake cap, DCR balance, gas, allowance coverage, and kicker status.
-- `/api/proof` gives AI judges one JSON surface for X Cup track fit, game-not-gamble safety boundaries, demo path, judge signals, contracts, proof txs, active wallets, settled/open/draw duel counts, recent duel states, recent settlement tx links, and verifier command.
+- `/api/proof` gives AI judges one JSON surface for X Cup track fit, game-not-gamble safety boundaries, demo path, judge signals, contracts, proof txs, active wallets, no-draw settlement counts, recent duel states, recent settlement tx links, and verifier command.
 - `npm run exhibition:run` can create real pre-submission activity with deterministic funded test wallets, country rotation, and multiple settled duels.
 
 ## Activity Target Before Final Demo
 
-- At least `30` settled duels. Achieved: `30`.
-- At least `20` country kickers. Achieved: `20`.
+- At least `10` settled V2 duels. Achieved: `12`.
+- At least `10` country kickers. Achieved: `11`.
 - At least `8` countries visible in the country leaderboard. Achieved: `8`.
 - At least `5` external tester wallets. Pending; collect through the local tester campaign.
 - At least `3` public X posts showing rivalry results and tagging `@XLayerOfficial`.

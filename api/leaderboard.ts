@@ -3,7 +3,7 @@ import { createPublicClient, defineChain, http, parseAbi } from "viem";
 
 const XLAYER_RPC_URL = process.env.XLAYER_RPC_URL ?? "https://testrpc.xlayer.tech/terigon";
 const XLAYER_CHAIN_ID = Number(process.env.XLAYER_CHAIN_ID ?? 1952);
-const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0x33dc85f938f21c8cf83556f444d16e61377a35a3") as `0x${string}`;
+const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0xb1344061536397e422e4db5d536e14c9b73ca8ba") as `0x${string}`;
 
 const chain = defineChain({
   id: XLAYER_CHAIN_ID,

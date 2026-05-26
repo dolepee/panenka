@@ -7,32 +7,22 @@ const XLAYER_EXPLORER =
   XLAYER_CHAIN_ID === 196
     ? "https://www.okx.com/web3/explorer/xlayer"
     : "https://www.okx.com/web3/explorer/xlayer-test";
-const DUEL_CREDIT = (process.env.DUEL_CREDIT_ADDRESS ?? "0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98") as `0x${string}`;
-const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0x33dc85f938f21c8cf83556f444d16e61377a35a3") as `0x${string}`;
-const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xebd15b2baa79a84d6e509b2dae12526abe5dacdb") as `0x${string}`;
-const PROOF_FROM_BLOCK = 31033500n;
+const DUEL_CREDIT = (process.env.DUEL_CREDIT_ADDRESS ?? "0xcc3fa00814d3577512d419154b8e2bd2c3566071") as `0x${string}`;
+const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0xb1344061536397e422e4db5d536e14c9b73ca8ba") as `0x${string}`;
+const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xb2760c0d27af86ab4e6b7b5f9c5ff7e1015ce2aa") as `0x${string}`;
+const PROOF_FROM_BLOCK = 31328493n;
 const PROOF_DUEL_ID = "1";
 const MAX_LOG_RANGE_BLOCKS = 99n;
 const PROOF_TXS = {
-  create: "0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3",
-  join: "0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6",
-  playerOneReveal: "0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51",
-  playerTwoRevealAndSettle: "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b",
+  create: "0xbc3118e3e017b37b35fd33efebec2326861e0c448b1bb5b73001d155120fa780",
+  join: "0xf833710748cd673a75c2de08207f9e984083d5fb226cc7364acd8609cad18629",
+  playerOneReveal: "0x4d80a46b57c9e842794cf2a051dfe2f0474b57be3202168bff5ae3eebded8fee",
+  playerTwoRevealAndSettle: "0x591cfb717624c02d2862b805237d34f9d151f3228d70bc9e7b1dd414e13c9181",
 };
 const RECENT_LOG_LOOKBACK_BLOCKS = 12_000n;
 const LOG_CHUNK_BATCH_SIZE = 12;
 const KNOWN_SETTLEMENT_TXS: Record<string, string> = {
   [PROOF_DUEL_ID]: PROOF_TXS.playerTwoRevealAndSettle,
-  "22": "0x7a08f732edf8681145a2ded33b19da83c7e5dedabc98fdf6493a38f6055622cb",
-  "23": "0x6db1104e367b756edb5d99ca146de0efae4aecccba68a77b4a492b30860087db",
-  "24": "0xed30f880cbd26691fad621a9e520a5fe9b901e1be8a45def2245408f3792cc02",
-  "25": "0xc7aae92391488f74846ae2c5c83bd3bf8ca964371b68186d7d6e4306edc33d72",
-  "26": "0x791bbfeea7a7e7426f845c4306421c0e824f4b00df7505a131b39280d19d407c",
-  "27": "0xd722d4b657649702aa75d6488b9607f32078fe9472fab0d5af5be53c63ff9d7a",
-  "28": "0x962f4ebe93e725e5ff8f2a747f2f87eda97231598ff8d3e0b09caab40bd99275",
-  "29": "0x8dd791767189608ad845e8e5130e6491ea118a145da1d11ba65b1137d5b0fbc1",
-  "30": "0xb45e5bd1d66eef3985af1c4f8aa491a69214d210ae7bebf1ceb8a42826a84c62",
-  "31": "0xe6c8a0038c113243191d03820d0742ab123a045c42bd3d9270a8ff0c25f5ecae",
 };
 const EXHIBITION_WALLETS = new Set(
   [
@@ -50,6 +40,14 @@ const EXHIBITION_WALLETS = new Set(
     "0x866bf1aDccC3c576c411f0E4091dec7d09241936",
     "0xdb898e4768B900D4b741AC4F11D2d55F1847D813",
     "0x6a46205542149FcC2722095DD83DE34265b2B18d",
+    "0x2F39aEb5FACb41Cc0eCD6faC1BE5bD5ff0B46571",
+    "0x4Aa840ced2a6e96c4Fd635213FF8887Dc3c830B2",
+    "0xCD0DC7D0BA48FF78d8ed51D0F17Cc4EEE01787A8",
+    "0x9373F3a3b08F8df803e03c17875BC9941663AD1E",
+    "0xD13c361F239AfC25Aabc779352D21ABee46bc56E",
+    "0x1031d382817c2F673aF468896D49Fde66dCE49F1",
+    "0xf42A04EBFB47EAE0deaB8AB9aFCa661aac24e47B",
+    "0x8e4B0Eba2c6e7116b05505C6a54a6fb5cB471f43",
   ].map((address) => address.toLowerCase()),
 );
 
@@ -67,7 +65,7 @@ const kickerAbi = parseAbi([
 ]);
 const duelAbi = parseAbi([
   "function nextDuelId() external view returns (uint256)",
-  "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
+  "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[10] shots,uint8[10] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[10] shots,uint8[10] saves) p2))",
 ]);
 const settledEvent = parseAbiItem(
   "event DuelSettled(uint256 indexed duelId, address indexed winner, uint8 p1Score, uint8 p2Score, uint256 payout, bool draw)",
@@ -107,8 +105,8 @@ function planFields(player: any) {
   return {
     commitHash: field(player, "commitHash", 2),
     revealed: Boolean(field(player, "revealed", 3)),
-    shots: Array.from({ length: 5 }, (_, index) => Number(shots[index] ?? 0)),
-    saves: Array.from({ length: 5 }, (_, index) => Number(saves[index] ?? 0)),
+    shots: Array.from({ length: 10 }, (_, index) => Number(shots[index] ?? 0)),
+    saves: Array.from({ length: 10 }, (_, index) => Number(saves[index] ?? 0)),
   };
 }
 
@@ -148,14 +146,23 @@ function scoreDuel(duel: any) {
   let p1Score = 0;
   let p2Score = 0;
   const rounds = [];
-  for (let index = 0; index < 5; index++) {
+  for (let index = 0; index < 10; index++) {
     const p1Goal = Number(p1Shots[index]) !== Number(p2Saves[index]);
     const p2Goal = Number(p2Shots[index]) !== Number(p1Saves[index]);
     if (p1Goal) p1Score += 1;
     if (p2Goal) p2Score += 1;
     rounds.push({ round: index + 1, p1Goal, p2Goal });
+
+    const kicksTaken = index + 1;
+    if (kicksTaken < 5) {
+      const remaining = 5 - kicksTaken;
+      if (p1Score > p2Score + remaining || p2Score > p1Score + remaining) break;
+    } else if (p1Score !== p2Score) {
+      break;
+    }
   }
-  return { p1Score, p2Score, draw: p1Score === p2Score, rounds };
+  if (p1Score === p2Score) p1Score += 1;
+  return { p1Score, p2Score, draw: false, rounds };
 }
 
 export default async function handler(_: any, response: any) {
@@ -299,7 +306,7 @@ export default async function handler(_: any, response: any) {
         "create a 1 DCR bot duel",
         "commit hidden shots and saves",
         "reveal both plans",
-        "settle best-of-five on X Layer",
+        "settle with early-stop and sudden-death shootout logic on X Layer",
         "update NFT stats and country leaderboard",
       ],
       safetyPositioning: {
@@ -335,6 +342,7 @@ export default async function handler(_: any, response: any) {
       cancelledDuels: statusCounts.Cancelled ?? 0,
       forfeitedDuels: statusCounts.Forfeited ?? 0,
       drawSettlements: settledDuels.filter((duel) => duel.draw).length,
+      noDrawSettlement: true,
       statusCounts,
       proofFromBlock: PROOF_FROM_BLOCK.toString(),
       countryCount: countryIds.size,
@@ -352,7 +360,7 @@ export default async function handler(_: any, response: any) {
     },
     judgeSignals: {
       innovation:
-        "The primitive is a commit/reveal hidden-plan duel: both players post a bytes32 commitment, then reveal a five-round shot and save plan. The contract proves neither player could change strategy after seeing the opponent. The penalty shootout is the World Cup wrapper.",
+        "The primitive is a commit/reveal hidden-plan duel: both players post a bytes32 commitment, then reveal a bounded shootout plan. The contract uses football-style early stop and sudden death so a duel always has a winner.",
       marketPotential: "Country kickers, country leaderboard, X result sharing, and one-wallet bot duels create repeatable World Cup fan activity.",
       completion: "Live app, X Layer contracts, one-wallet bot path, latest replay, leaderboard, and machine-readable proof endpoint are all deployed.",
       xLayerUsage: "Minting, faucet claims, duel creation, joins, reveals, settlement, DuelCredit movement, and KickerNFT stat updates happen on X Layer testnet.",

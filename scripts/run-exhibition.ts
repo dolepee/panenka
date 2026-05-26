@@ -26,8 +26,8 @@ type Deployment = {
   };
 };
 type Plan = {
-  shots: [number, number, number, number, number];
-  saves: [number, number, number, number, number];
+  shots: [number, number, number, number, number, number, number, number, number, number];
+  saves: [number, number, number, number, number, number, number, number, number, number];
   salt: `0x${string}`;
 };
 
@@ -61,9 +61,9 @@ function privateKeyFromSeed(seed: string, index: number): `0x${string}` {
 }
 
 function nonDrawPlans(seed: string, duelId: bigint, p1: `0x${string}`, p2: `0x${string}`, index: number): [Plan, Plan] {
-  const p1Shots = [0, 1, 2, 0, 1].map((value) => (value + index) % 3) as Plan["shots"];
-  const p2Shots = [0, 0, 0, 0, 0].map((value) => (value + index) % 3) as Plan["shots"];
-  const p1Saves = [...p2Shots] as Plan["saves"];
+  const p1Shots = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0].map((value) => (value + index) % 3) as Plan["shots"];
+  const p2Shots = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1].map((value) => (value + index) % 3) as Plan["shots"];
+  const p1Saves = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1].map((value) => (value + index) % 3) as Plan["saves"];
   const p2Saves = p1Shots.map((value) => (value + 1) % 3) as Plan["saves"];
   return [
     { shots: p1Shots, saves: p1Saves, salt: keccak256(new TextEncoder().encode(`${seed}:salt:${duelId}:${p1}:p1`)) },
@@ -74,7 +74,7 @@ function nonDrawPlans(seed: string, duelId: bigint, p1: `0x${string}`, p2: `0x${
 function commitment(player: `0x${string}`, hidden: Plan) {
   return keccak256(
     encodeAbiParameters(
-      [{ type: "address" }, { type: "uint8[5]" }, { type: "uint8[5]" }, { type: "bytes32" }],
+      [{ type: "address" }, { type: "uint8[10]" }, { type: "uint8[10]" }, { type: "bytes32" }],
       [player, hidden.shots, hidden.saves, hidden.salt],
     ),
   );
@@ -184,6 +184,21 @@ async function main() {
   for (let index = 0; index < duelCount; index++) {
     const p1 = playerState[index % playerState.length];
     const p2 = playerState[(index + 1 + (index % (playerState.length - 1))) % playerState.length];
+    const p1TokenId = (await publicClient.readContract({
+      address: contracts.kickerNft,
+      abi: kicker.abi,
+      functionName: "tokenOfOwner",
+      args: [p1.account.address],
+    })) as bigint;
+    const p2TokenId = (await publicClient.readContract({
+      address: contracts.kickerNft,
+      abi: kicker.abi,
+      functionName: "tokenOfOwner",
+      args: [p2.account.address],
+    })) as bigint;
+    if (p1TokenId === 0n || p2TokenId === 0n) {
+      throw new Error(`Missing kicker token for exhibition duel #${index + 1}`);
+    }
     const duelId = (await publicClient.readContract({
       address: contracts.penaltyDuel,
       abi: duel.abi,
@@ -199,7 +214,7 @@ async function main() {
         address: contracts.penaltyDuel,
         abi: duel.abi,
         functionName: "createDuel",
-        args: [stake, p1.tokenId, commitment(p1.account.address, p1Plan)],
+        args: [stake, p1TokenId, commitment(p1.account.address, p1Plan)],
       }),
     );
     await wait(
@@ -209,7 +224,7 @@ async function main() {
         address: contracts.penaltyDuel,
         abi: duel.abi,
         functionName: "joinDuel",
-        args: [duelId, p2.tokenId, commitment(p2.account.address, p2Plan)],
+        args: [duelId, p2TokenId, commitment(p2.account.address, p2Plan)],
       }),
     );
     await wait(

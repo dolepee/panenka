@@ -18,8 +18,8 @@ contract PenaltyDuel {
         uint256 kickerTokenId;
         bytes32 commitHash;
         bool revealed;
-        uint8[5] shots;
-        uint8[5] saves;
+        uint8[10] shots;
+        uint8[10] saves;
     }
 
     struct Duel {
@@ -34,6 +34,8 @@ contract PenaltyDuel {
 
     uint256 public constant JOIN_TIMEOUT = 30 minutes;
     uint256 public constant REVEAL_TIMEOUT = 30 minutes;
+    uint8 public constant STANDARD_KICKS = 5;
+    uint8 public constant MAX_KICKS = 10;
     uint256 public nextDuelId = 1;
 
     DuelCredit public immutable credit;
@@ -118,7 +120,7 @@ contract PenaltyDuel {
         emit DuelJoined(duelId, msg.sender, kickerTokenId, commitHash);
     }
 
-    function reveal(uint256 duelId, uint8[5] calldata shots, uint8[5] calldata saves, bytes32 salt) external {
+    function reveal(uint256 duelId, uint8[10] calldata shots, uint8[10] calldata saves, bytes32 salt) external {
         Duel storage duel = duels[duelId];
         if (duel.status != DuelStatus.Committed) revert InvalidStatus();
         _validateDirections(shots);
@@ -170,7 +172,7 @@ contract PenaltyDuel {
         emit DuelForfeited(duelId, msg.sender, loser);
     }
 
-    function commitment(address player, uint8[5] calldata shots, uint8[5] calldata saves, bytes32 salt)
+    function commitment(address player, uint8[10] calldata shots, uint8[10] calldata saves, bytes32 salt)
         external
         pure
         returns (bytes32)
@@ -186,23 +188,43 @@ contract PenaltyDuel {
         uint8 p1Score;
         uint8 p2Score;
 
-        for (uint8 i = 0; i < 5; i++) {
+        for (uint8 i = 0; i < MAX_KICKS; i++) {
             bool p1Goal = duel.p1.shots[i] != duel.p2.saves[i];
             bool p2Goal = duel.p2.shots[i] != duel.p1.saves[i];
             if (p1Goal) p1Score += 1;
             if (p2Goal) p2Score += 1;
             emit RoundResolved(duelId, i + 1, p1Goal, p2Goal, duel.p1.shots[i], duel.p2.shots[i], duel.p1.saves[i], duel.p2.saves[i]);
+
+            uint8 kicksTaken = i + 1;
+            if (kicksTaken < STANDARD_KICKS) {
+                uint8 remaining = STANDARD_KICKS - kicksTaken;
+                if (p1Score > p2Score + remaining || p2Score > p1Score + remaining) break;
+            } else if (p1Score != p2Score) {
+                break;
+            }
+        }
+
+        if (p1Score == p2Score) {
+            bool p1TieBreak =
+                uint256(
+                    keccak256(
+                        abi.encode(
+                            duelId,
+                            duel.p1.commitHash,
+                            duel.p2.commitHash,
+                            duel.p1.shots,
+                            duel.p2.shots,
+                            duel.p1.saves,
+                            duel.p2.saves
+                        )
+                    )
+                ) % 2 == 0;
+            if (p1TieBreak) p1Score += 1;
+            else p2Score += 1;
         }
 
         duel.status = DuelStatus.Settled;
         uint256 pot = duel.stake * 2;
-        if (p1Score == p2Score) {
-            _safeTransfer(duel.p1.player, duel.stake);
-            _safeTransfer(duel.p2.player, duel.stake);
-            emit DuelSettled(duelId, address(0), p1Score, p2Score, 0, true);
-            return;
-        }
-
         bool p1Won = p1Score > p2Score;
         address winner = p1Won ? duel.p1.player : duel.p2.player;
         _safeTransfer(winner, pot);
@@ -217,13 +239,13 @@ contract PenaltyDuel {
         revert NotPlayer();
     }
 
-    function _validateDirections(uint8[5] calldata directions) internal pure {
-        for (uint256 i = 0; i < 5; i++) {
+    function _validateDirections(uint8[10] calldata directions) internal pure {
+        for (uint256 i = 0; i < MAX_KICKS; i++) {
             if (directions[i] > 2) revert InvalidDirection();
         }
     }
 
-    function _commitment(address player, uint8[5] calldata shots, uint8[5] calldata saves, bytes32 salt)
+    function _commitment(address player, uint8[10] calldata shots, uint8[10] calldata saves, bytes32 salt)
         internal
         pure
         returns (bytes32)

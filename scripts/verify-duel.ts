@@ -59,10 +59,18 @@ function scoreDuel(duelState: any) {
   const p2Saves = field(p2, "saves", 5) ?? [];
   let p1Score = 0;
   let p2Score = 0;
-  for (let index = 0; index < 5; index++) {
+  for (let index = 0; index < 10; index++) {
     if (Number(p1Shots[index]) !== Number(p2Saves[index])) p1Score += 1;
     if (Number(p2Shots[index]) !== Number(p1Saves[index])) p2Score += 1;
+    const kicksTaken = index + 1;
+    if (kicksTaken < 5) {
+      const remaining = 5 - kicksTaken;
+      if (p1Score > p2Score + remaining || p2Score > p1Score + remaining) break;
+    } else if (p1Score !== p2Score) {
+      break;
+    }
   }
+  if (p1Score === p2Score) p1Score += 1;
   return `${p1Score}-${p2Score}`;
 }
 

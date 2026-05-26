@@ -2,7 +2,7 @@
 
 ![Panenka on X Layer](app/public/panenka-card.png)
 
-Hidden-plan duels on X Layer. Two wallets commit a sealed five-round shootout strategy as a `bytes32` hash, reveal, and the contract settles best of five with onchain stats and a country leaderboard. No oracle, no live match feed, no betting.
+Hidden-plan duels on X Layer. Two wallets commit a sealed shootout strategy as a `bytes32` hash, reveal, and the contract settles an IFAB-style penalty sequence with early stops, sudden death, onchain stats, and a country leaderboard. No oracle, no live match feed, no betting.
 
 The protocol primitive is the commit/reveal hidden-plan duel. The penalty shootout is the cultural wrapper that makes World Cup fans understand it instantly.
 
@@ -10,7 +10,7 @@ The protocol primitive is the commit/reveal hidden-plan duel. The penalty shooto
 - Proof: `https://panenka-alpha.vercel.app/api/proof`
 - X: `https://x.com/PanenkaGG`
 
-V1 uses non-transferable DuelCredit instead of real-money staking to keep the demo focused on World Cup gameplay, commit/reveal fairness, and X Layer transaction proof.
+V2 uses non-transferable DuelCredit instead of real-money staking to keep the demo focused on World Cup gameplay, commit/reveal fairness, no-draw settlement, and X Layer transaction proof.
 
 Public testers can play with one wallet against Panenka Bot. The contract still enforces a real two-player duel; the bot is a server-side opponent wallet that joins and reveals with its own commitment.
 
@@ -26,8 +26,8 @@ Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard`
 ## What Is Built
 
 - `DuelCredit`: non-transferable in-game credit with a daily faucet and duel-only transfer route.
-- `KickerNFT`: country kicker NFT with wins, losses, streak, and level.
-- `PenaltyDuel`: create, join, commit, reveal, settle, timeout cancel, and forfeit.
+- `KickerNFT`: country kicker NFT with wins, losses, streak, level, and owner-controlled country switching.
+- `PenaltyDuel`: create, join, commit, reveal, IFAB-style no-draw settlement, timeout cancel, and forfeit.
 - Foundry tests covering the full duel lifecycle and failure cases.
 - X Layer testnet deployment and first two-wallet duel proof.
 - Server-side Panenka Bot endpoint for one-wallet testing.
@@ -40,7 +40,7 @@ Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard`
 - Live leaderboard reads `KickerNFT` owner and stats state from X Layer, with both country and kicker rankings.
 - Country leaderboard rows include X challenge links so the World Cup rivalry loop can spread from each onchain result.
 - Settled duel screen includes a copyable tester report with result, tx link, and app URL.
-- Machine-readable `/api/proof` endpoint for AI judges: X Cup track fit, game-not-gamble safety boundaries, demo path, contracts, proof txs, settled/open/draw duel counts, recent duels, recent settlement tx links, and verifier marker.
+- Machine-readable `/api/proof` endpoint for AI judges: X Cup track fit, game-not-gamble safety boundaries, demo path, contracts, proof txs, settled/open duel counts, no-draw settlement proof, recent duels, recent settlement tx links, and verifier marker.
 
 ## X Layer Testnet Proof
 
@@ -50,22 +50,23 @@ Exhibition runner wallets produce deterministic activity to demonstrate the full
 
 Contracts:
 
-- `DuelCredit`: [`0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98`](https://www.okx.com/web3/explorer/xlayer-test/address/0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98)
-- `KickerNFT`: [`0x33dc85f938f21c8cf83556f444d16e61377a35a3`](https://www.okx.com/web3/explorer/xlayer-test/address/0x33dc85f938f21c8cf83556f444d16e61377a35a3)
-- `PenaltyDuel`: [`0xebd15b2baa79a84d6e509b2dae12526abe5dacdb`](https://www.okx.com/web3/explorer/xlayer-test/address/0xebd15b2baa79a84d6e509b2dae12526abe5dacdb)
+- `DuelCredit`: [`0xcc3fa00814d3577512d419154b8e2bd2c3566071`](https://www.okx.com/web3/explorer/xlayer-test/address/0xcc3fa00814d3577512d419154b8e2bd2c3566071)
+- `KickerNFT`: [`0xb1344061536397e422e4db5d536e14c9b73ca8ba`](https://www.okx.com/web3/explorer/xlayer-test/address/0xb1344061536397e422e4db5d536e14c9b73ca8ba)
+- `PenaltyDuel`: [`0xb2760c0d27af86ab4e6b7b5f9c5ff7e1015ce2aa`](https://www.okx.com/web3/explorer/xlayer-test/address/0xb2760c0d27af86ab4e6b7b5f9c5ff7e1015ce2aa)
 
 First settled duel proof:
 
 - Duel: `#1`
-- Create duel tx: [`0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3`](https://www.okx.com/web3/explorer/xlayer-test/tx/0xd7977b7bf6a64c7de8917f4e1c70e54995e4bf076d2788c98f50da7747cd87f3)
-- Join duel tx: [`0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6`](https://www.okx.com/web3/explorer/xlayer-test/tx/0x8fbe70029798b0a40da767945a64787febd66ac7ab9656dba0126ba5b537eaa6)
-- Player one reveal tx: [`0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51`](https://www.okx.com/web3/explorer/xlayer-test/tx/0xdc7680675114e2e27f906a01824d746e29f5a57f56d1b66974271e06df82ac51)
-- Player two reveal and settlement tx: [`0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b`](https://www.okx.com/web3/explorer/xlayer-test/tx/0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b)
+- Create duel tx: [`0xbc3118e3e017b37b35fd33efebec2326861e0c448b1bb5b73001d155120fa780`](https://www.okx.com/web3/explorer/xlayer-test/tx/0xbc3118e3e017b37b35fd33efebec2326861e0c448b1bb5b73001d155120fa780)
+- Join duel tx: [`0xf833710748cd673a75c2de08207f9e984083d5fb226cc7364acd8609cad18629`](https://www.okx.com/web3/explorer/xlayer-test/tx/0xf833710748cd673a75c2de08207f9e984083d5fb226cc7364acd8609cad18629)
+- Player one reveal tx: [`0x4d80a46b57c9e842794cf2a051dfe2f0474b57be3202168bff5ae3eebded8fee`](https://www.okx.com/web3/explorer/xlayer-test/tx/0x4d80a46b57c9e842794cf2a051dfe2f0474b57be3202168bff5ae3eebded8fee)
+- Player two reveal and settlement tx: [`0x591cfb717624c02d2862b805237d34f9d151f3228d70bc9e7b1dd414e13c9181`](https://www.okx.com/web3/explorer/xlayer-test/tx/0x591cfb717624c02d2862b805237d34f9d151f3228d70bc9e7b1dd414e13c9181)
 
 Recorded readback immediately after that settlement:
 
 - Player one: Nigeria kicker, `105` DuelCredit, `1` win, `1` streak.
 - Player two: France kicker, `95` DuelCredit, `1` loss.
+- Score: Nigeria `3-0` France, stopped early once France could no longer catch up.
 
 Verifier:
 
@@ -157,7 +158,7 @@ These events are the judge-facing proof: a duel has two players, both commits ar
 6. Click `Bot joins this duel` for one-wallet testing, or ask a human opponent to join.
 7. Reveal from your wallet.
 8. Click `Bot reveals and settles`, or ask the human opponent to reveal.
-9. The UI shows the settlement transaction, stats update, and leaderboard change.
+9. The UI shows the grass-pitch reveal animation, settlement transaction, stats update, leaderboard change, and shareable result image.
 
 Fast judge path:
 

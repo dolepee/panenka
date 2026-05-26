@@ -17,9 +17,9 @@ import { privateKeyToAccount } from "viem/accounts";
 const XLAYER_RPC_URL = process.env.XLAYER_RPC_URL ?? "https://testrpc.xlayer.tech/terigon";
 const XLAYER_CHAIN_ID = Number(process.env.XLAYER_CHAIN_ID ?? 1952);
 const BOT_PRIVATE_KEY = process.env.BOT_PRIVATE_KEY as `0x${string}` | undefined;
-const DUEL_CREDIT = (process.env.DUEL_CREDIT_ADDRESS ?? "0xcf8af8245abe1aeedc23b1f9c45ba84e17614c98") as `0x${string}`;
-const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0x33dc85f938f21c8cf83556f444d16e61377a35a3") as `0x${string}`;
-const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xebd15b2baa79a84d6e509b2dae12526abe5dacdb") as `0x${string}`;
+const DUEL_CREDIT = (process.env.DUEL_CREDIT_ADDRESS ?? "0xcc3fa00814d3577512d419154b8e2bd2c3566071") as `0x${string}`;
+const KICKER_NFT = (process.env.KICKER_NFT_ADDRESS ?? "0xb1344061536397e422e4db5d536e14c9b73ca8ba") as `0x${string}`;
+const PENALTY_DUEL = (process.env.PENALTY_DUEL_ADDRESS ?? "0xb2760c0d27af86ab4e6b7b5f9c5ff7e1015ce2aa") as `0x${string}`;
 const BOT_MAX_STAKE_WEI = BigInt(process.env.BOT_MAX_STAKE_WEI ?? "1000000000000000000");
 
 const chain = defineChain({
@@ -42,22 +42,22 @@ const kickerAbi = parseAbi([
 ]);
 
 const duelAbi = parseAbi([
-  "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[5] shots,uint8[5] saves) p2))",
+  "function getDuel(uint256 duelId) view returns ((uint256 stake,uint256 createdAt,uint256 joinedAt,uint256 firstRevealAt,uint8 status,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[10] shots,uint8[10] saves) p1,(address player,uint256 kickerTokenId,bytes32 commitHash,bool revealed,uint8[10] shots,uint8[10] saves) p2))",
   "function joinDuel(uint256 duelId, uint256 kickerTokenId, bytes32 commitHash) external",
-  "function reveal(uint256 duelId, uint8[5] shots, uint8[5] saves, bytes32 salt) external",
+  "function reveal(uint256 duelId, uint8[10] shots, uint8[10] saves, bytes32 salt) external",
 ]);
 
 type Plan = {
-  shots: [number, number, number, number, number];
-  saves: [number, number, number, number, number];
+  shots: [number, number, number, number, number, number, number, number, number, number];
+  saves: [number, number, number, number, number, number, number, number, number, number];
   salt: `0x${string}`;
 };
 
 function botPlan(duelId: bigint): Plan {
   const secret = process.env.BOT_COMMIT_SECRET ?? BOT_PRIVATE_KEY ?? "panenka-bot";
   const seed = BigInt(keccak256(toHex(`panenka:${duelId.toString()}:${secret}`)));
-  const shots = Array.from({ length: 5 }, (_, index) => Number((seed >> BigInt(index * 8)) % 3n)) as Plan["shots"];
-  const saves = Array.from({ length: 5 }, (_, index) => Number((seed >> BigInt(40 + index * 8)) % 3n)) as Plan["saves"];
+  const shots = Array.from({ length: 10 }, (_, index) => Number((seed >> BigInt(index * 8)) % 3n)) as Plan["shots"];
+  const saves = Array.from({ length: 10 }, (_, index) => Number((seed >> BigInt(80 + index * 8)) % 3n)) as Plan["saves"];
   const salt = keccak256(toHex(`panenka:salt:${duelId.toString()}:${secret}`));
   return { shots, saves, salt };
 }
@@ -65,7 +65,7 @@ function botPlan(duelId: bigint): Plan {
 function commitment(player: `0x${string}`, plan: Plan) {
   return keccak256(
     encodeAbiParameters(
-      [{ type: "address" }, { type: "uint8[5]" }, { type: "uint8[5]" }, { type: "bytes32" }],
+      [{ type: "address" }, { type: "uint8[10]" }, { type: "uint8[10]" }, { type: "bytes32" }],
       [player, plan.shots, plan.saves, plan.salt],
     ),
   );

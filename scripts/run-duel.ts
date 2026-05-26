@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createPublicClient, createWalletClient, defineChain, encodeAbiParameters, http, keccak256, type Abi } from "viem";
+import { createPublicClient, createWalletClient, defineChain, encodeAbiParameters, formatUnits, http, keccak256, type Abi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 type Artifact = { abi: Abi };
@@ -15,12 +15,22 @@ type Deployment = {
   };
 };
 type Plan = {
-  shots: [number, number, number, number, number];
-  saves: [number, number, number, number, number];
+  shots: [number, number, number, number, number, number, number, number, number, number];
+  saves: [number, number, number, number, number, number, number, number, number, number];
   salt: `0x${string}`;
 };
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const countries: Record<number, string> = {
+  1: "Argentina",
+  2: "Brazil",
+  3: "France",
+  4: "Nigeria",
+  5: "Japan",
+  6: "England",
+  7: "Morocco",
+  8: "USA",
+};
 
 function required(name: string): string {
   const value = process.env[name];
@@ -36,10 +46,14 @@ function deployment(chainId: number): Deployment {
   return JSON.parse(readFileSync(resolve(root, "deployments", `${chainId}.json`), "utf8")) as Deployment;
 }
 
+function writeDeployment(chainId: number, data: unknown) {
+  writeFileSync(resolve(root, "deployments", `${chainId}.json`), `${JSON.stringify(data, null, 2)}\n`);
+}
+
 function commitment(player: `0x${string}`, plan: Plan) {
   return keccak256(
     encodeAbiParameters(
-      [{ type: "address" }, { type: "uint8[5]" }, { type: "uint8[5]" }, { type: "bytes32" }],
+      [{ type: "address" }, { type: "uint8[10]" }, { type: "uint8[10]" }, { type: "bytes32" }],
       [player, plan.shots, plan.saves, plan.salt],
     ),
   );
@@ -104,45 +118,87 @@ async function main() {
   );
 
   const p1Plan: Plan = {
-    shots: [0, 1, 2, 0, 1],
-    saves: [0, 0, 0, 0, 0],
+    shots: [0, 1, 2, 0, 1, 2, 0, 1, 2, 0],
+    saves: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
     salt: keccak256("0x70616e656e6b612d70312d73616c74"),
   };
   const p2Plan: Plan = {
-    shots: [0, 0, 0, 0, 0],
-    saves: [1, 1, 1, 1, 1],
+    shots: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+    saves: [1, 2, 0, 1, 2, 0, 1, 2, 0, 1],
     salt: keccak256("0x70616e656e6b612d70322d73616c74"),
   };
   const duelId = (await publicClient.readContract({ address: contracts.penaltyDuel, abi: duel.abi, functionName: "nextDuelId" })) as bigint;
+  const create = await p1Client.writeContract({
+    chain,
+    address: contracts.penaltyDuel,
+    abi: duel.abi,
+    functionName: "createDuel",
+    args: [5000000000000000000n, p1Token, commitment(p1.address, p1Plan)],
+  });
   await wait(
     `create duel #${duelId}`,
-    await p1Client.writeContract({
-      chain,
-      address: contracts.penaltyDuel,
-      abi: duel.abi,
-      functionName: "createDuel",
-      args: [5000000000000000000n, p1Token, commitment(p1.address, p1Plan)],
-    }),
+    create,
   );
+  const join = await p2Client.writeContract({
+    chain,
+    address: contracts.penaltyDuel,
+    abi: duel.abi,
+    functionName: "joinDuel",
+    args: [duelId, p2Token, commitment(p2.address, p2Plan)],
+  });
   await wait(
     `join duel #${duelId}`,
-    await p2Client.writeContract({
-      chain,
-      address: contracts.penaltyDuel,
-      abi: duel.abi,
-      functionName: "joinDuel",
-      args: [duelId, p2Token, commitment(p2.address, p2Plan)],
-    }),
+    join,
   );
+  const playerOneReveal = await p1Client.writeContract({ chain, address: contracts.penaltyDuel, abi: duel.abi, functionName: "reveal", args: [duelId, p1Plan.shots, p1Plan.saves, p1Plan.salt] });
   await wait(
     `p1 reveal #${duelId}`,
-    await p1Client.writeContract({ chain, address: contracts.penaltyDuel, abi: duel.abi, functionName: "reveal", args: [duelId, p1Plan.shots, p1Plan.saves, p1Plan.salt] }),
+    playerOneReveal,
   );
+  const playerTwoRevealAndSettle = await p2Client.writeContract({ chain, address: contracts.penaltyDuel, abi: duel.abi, functionName: "reveal", args: [duelId, p2Plan.shots, p2Plan.saves, p2Plan.salt] });
   await wait(
     `p2 reveal #${duelId}`,
-    await p2Client.writeContract({ chain, address: contracts.penaltyDuel, abi: duel.abi, functionName: "reveal", args: [duelId, p2Plan.shots, p2Plan.saves, p2Plan.salt] }),
+    playerTwoRevealAndSettle,
   );
 
+  const [state, p1Stats, p2Stats, p1Balance, p2Balance] = await Promise.all([
+    publicClient.readContract({ address: contracts.penaltyDuel, abi: duel.abi, functionName: "getDuel", args: [duelId] }) as Promise<any>,
+    publicClient.readContract({ address: contracts.kickerNft, abi: kicker.abi, functionName: "statsOf", args: [p1Token] }) as Promise<any>,
+    publicClient.readContract({ address: contracts.kickerNft, abi: kicker.abi, functionName: "statsOf", args: [p2Token] }) as Promise<any>,
+    publicClient.readContract({ address: contracts.duelCredit, abi: credit.abi, functionName: "balanceOf", args: [p1.address] }) as Promise<bigint>,
+    publicClient.readContract({ address: contracts.duelCredit, abi: credit.abi, functionName: "balanceOf", args: [p2.address] }) as Promise<bigint>,
+  ]);
+  const deploymentData = deployment(chainId) as any;
+  const score = `${Number(state.p1.shots[0] !== state.p2.saves[0]) + Number(state.p1.shots[1] !== state.p2.saves[1]) + Number(state.p1.shots[2] !== state.p2.saves[2])}-${Number(state.p2.shots[0] !== state.p1.saves[0]) + Number(state.p2.shots[1] !== state.p1.saves[1]) + Number(state.p2.shots[2] !== state.p1.saves[2])}`;
+  deploymentData.proof = {
+    duelId: duelId.toString(),
+    fromBlock: deploymentData.proof?.fromBlock ?? "0",
+    playerOne: p1.address,
+    playerTwo: p2.address,
+    transactions: { create, join, playerOneReveal, playerTwoRevealAndSettle },
+    readback: {
+      playerOneCountry: countries[Number(p1Stats[0])] ?? `Country ${p1Stats[0]}`,
+      playerTwoCountry: countries[Number(p2Stats[0])] ?? `Country ${p2Stats[0]}`,
+      playerOneBalance: formatUnits(p1Balance, 18),
+      playerTwoBalance: formatUnits(p2Balance, 18),
+      playerOneWins: p1Stats[1].toString(),
+      playerTwoLosses: p2Stats[2].toString(),
+      score,
+    },
+  };
+  deploymentData.latestProof = {
+    duelId: duelId.toString(),
+    matchup: `${deploymentData.proof.readback.playerOneCountry} ${score} ${deploymentData.proof.readback.playerTwoCountry}`,
+    playerOne: p1.address,
+    playerTwo: p2.address,
+    settlement: playerTwoRevealAndSettle,
+    readback: {
+      playerOneCountry: deploymentData.proof.readback.playerOneCountry,
+      playerTwoCountry: deploymentData.proof.readback.playerTwoCountry,
+      score,
+    },
+  };
+  writeDeployment(chainId, deploymentData);
   console.log(`Settled duel #${duelId}. Winner should be ${p1.address}.`);
 }
 

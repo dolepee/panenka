@@ -791,76 +791,145 @@ h2 {
   color: rgba(248, 243, 231, 0.62);
 }
 
-.miniGoal {
+.stadiumViz {
   position: relative;
-  height: 130px;
+  min-height: 190px;
   overflow: hidden;
-  border-radius: 16px;
-  background: linear-gradient(160deg, rgba(18, 111, 76, 0.85), rgba(5, 10, 15, 0.9));
+  border: 1px solid rgba(248, 243, 231, 0.18);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 100%, rgba(68, 244, 196, 0.28), transparent 42%),
+    linear-gradient(180deg, #15283d 0%, #0b1a12 45%, #148142 100%);
+  box-shadow: inset 0 -30px 60px rgba(0, 0, 0, 0.38);
 }
 
-.miniGoal::before {
-  content: "";
+.stadiumSky {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: rgba(248, 243, 231, 0.82);
+}
+
+.stadiumSky strong {
+  color: #f8ff70;
+  font-size: 14px;
+}
+
+.goalFrame {
   position: absolute;
-  top: 18px;
+  top: 40px;
   left: 50%;
-  width: 112px;
-  height: 42px;
+  width: 142px;
+  height: 62px;
   border: 3px solid rgba(248, 243, 231, 0.72);
   border-bottom: 0;
   transform: translateX(-50%);
 }
 
-.miniKeeper,
-.miniBall {
+.netLine {
   position: absolute;
-  display: grid;
-  place-items: center;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(248, 243, 231, 0.16) 0 1px, transparent 1px 18px),
+    repeating-linear-gradient(0deg, rgba(248, 243, 231, 0.16) 0 1px, transparent 1px 18px);
 }
 
-.miniKeeper {
-  left: 88px;
-  top: 48px;
+.keeperSprite {
+  position: absolute;
+  left: var(--keeper-x);
+  top: 30px;
   width: 44px;
   height: 34px;
+  display: grid;
+  place-items: center;
   border-radius: 10px;
   color: #061009;
   background: #f8ff70;
   font-size: 12px;
   font-weight: 900;
-  transition: transform 500ms ease;
+  transform: translateX(-50%);
+  animation: keeperDive 850ms ease both;
 }
 
-.miniKeeper.keeper-save {
-  transform: translateX(30px) rotate(12deg);
+.goalTarget {
+  position: absolute;
+  left: var(--shot-x);
+  top: 18px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(248, 255, 112, 0.88);
+  border-radius: 999px;
+  transform: translateX(-50%);
 }
 
-.miniKeeper.keeper-wrong {
-  transform: translateX(-36px) rotate(-18deg);
+.grassPitch {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 92px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 40px),
+    linear-gradient(180deg, #25a855, #0f5f30);
 }
 
-.miniBall {
-  left: 98px;
+.penaltySpot {
+  position: absolute;
+  left: 50%;
   bottom: 18px;
-  width: 16px;
-  height: 16px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(248, 243, 231, 0.85);
+}
+
+.shotTrail {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  width: 3px;
+  height: 96px;
+  border-radius: 999px;
+  background: linear-gradient(rgba(248, 255, 112, 0), rgba(248, 255, 112, 0.8));
+  transform-origin: bottom;
+  transform: translateX(-50%) rotate(var(--trail-rotate));
+  opacity: 0.65;
+}
+
+.matchBall {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
   background: #f8f3e7;
   box-shadow: 0 0 28px rgba(248, 255, 112, 0.9);
-  transition: transform 600ms ease;
+  animation: ballFlight 900ms ease both;
 }
 
-.miniBall.ball-goal {
-  transform: translate(42px, -76px);
+@keyframes ballFlight {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    left: var(--shot-x);
+    transform: translateX(-50%) translateY(-122px) scale(0.72);
+  }
 }
 
-.miniBall.ball-save {
-  transform: translate(28px, -50px);
+@keyframes keeperDive {
+  0% {
+    transform: translateX(-50%) translateY(18px) rotate(0deg);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) rotate(-10deg);
+  }
 }
 
 .roundStrip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 8px;
   margin: 8px 0;
 }

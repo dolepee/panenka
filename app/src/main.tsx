@@ -35,7 +35,7 @@ declare global {
   }
 }
 
-type DirectionPlan = [number, number, number, number, number];
+type DirectionPlan = [number, number, number, number, number, number, number, number, number, number];
 type StoredPlan = {
   duelId: number;
   shots: DirectionPlan;
@@ -142,7 +142,7 @@ const countryById = Object.fromEntries(countries.map((country) => [country.id, c
 const countryOptionById = Object.fromEntries(countries.map((country) => [country.id, country]));
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const PROOF_DUEL_ID = 1;
-const PROOF_SETTLEMENT_TX = "0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b";
+const PROOF_SETTLEMENT_TX = "0x591cfb717624c02d2862b805237d34f9d151f3228d70bc9e7b1dd414e13c9181";
 const XLAYER_TESTNET_FAUCET = "https://web3.okx.com/en-us/xlayer/faucet";
 
 const publicClient = createPublicClient({ chain: xLayer, transport: http() });
@@ -168,6 +168,75 @@ function directionName(direction?: number) {
   if (direction === 1) return "center";
   if (direction === 2) return "right";
   return "hidden";
+}
+
+function scoreShootout(
+  p1Shots: number[],
+  p1Saves: number[],
+  p2Shots: number[],
+  p2Saves: number[],
+) {
+  const rounds: RoundResult[] = [];
+  let p1Score = 0;
+  let p2Score = 0;
+  let tiebreak = false;
+  for (let index = 0; index < 10; index++) {
+    const p1Goal = Number(p1Shots[index]) !== Number(p2Saves[index]);
+    const p2Goal = Number(p2Shots[index]) !== Number(p1Saves[index]);
+    if (p1Goal) p1Score += 1;
+    if (p2Goal) p2Score += 1;
+    rounds.push({
+      round: index + 1,
+      youGoal: p1Goal,
+      botGoal: p2Goal,
+      p1Shot: Number(p1Shots[index]),
+      p2Shot: Number(p2Shots[index]),
+      p1Save: Number(p1Saves[index]),
+      p2Save: Number(p2Saves[index]),
+    });
+
+    const kicksTaken = index + 1;
+    if (kicksTaken < 5) {
+      const remaining = 5 - kicksTaken;
+      if (p1Score > p2Score + remaining || p2Score > p1Score + remaining) break;
+    } else if (p1Score !== p2Score) {
+      break;
+    }
+  }
+  if (p1Score === p2Score) {
+    tiebreak = true;
+    p1Score += 1;
+  }
+  return { rounds, score: `${p1Score}-${p2Score}`, p1Score, p2Score, tiebreak };
+}
+
+function ShootoutVisualizer({ round }: { round?: RoundResult }) {
+  const shotX = lanePosition(round?.p1Shot);
+  const keeperX = lanePosition(round?.p2Save);
+  const trailRotate = laneRotation(round?.p1Shot);
+  const goal = Boolean(round?.youGoal);
+  return (
+    <div
+      className={`stadiumViz ${goal ? "isGoal" : "isSave"}`}
+      style={{ "--shot-x": shotX, "--keeper-x": keeperX, "--trail-rotate": trailRotate } as React.CSSProperties}
+    >
+      <div className="stadiumSky">
+        <span>Round {round?.round ?? 1}</span>
+        <strong>{goal ? "GOAL" : "SAVED"}</strong>
+      </div>
+      <div className="goalFrame">
+        <div className="netLine netLineOne" />
+        <div className="netLine netLineTwo" />
+        <div className="keeperSprite">GK</div>
+        <div className="goalTarget" />
+      </div>
+      <div className="grassPitch">
+        <div className="penaltySpot" />
+        <div className="shotTrail" />
+        <div className="matchBall" />
+      </div>
+    </div>
+  );
 }
 
 function txLink(hash: string) {
@@ -197,6 +266,82 @@ function shareCountryUrl(row: CountryLeaderboardRow, rank: number) {
   return shareResultUrl(
     `${row.country} is #${rank} on Panenka with ${row.wins} wins, ${row.kickers} country kickers, and a ${row.streak} best streak. Challenge this country in an onchain penalty duel on X Layer.`,
   );
+}
+
+function lanePosition(direction?: number) {
+  if (direction === 0) return "24%";
+  if (direction === 1) return "50%";
+  if (direction === 2) return "76%";
+  return "50%";
+}
+
+function laneRotation(direction?: number) {
+  if (direction === 0) return "-18deg";
+  if (direction === 2) return "18deg";
+  return "0deg";
+}
+
+function resultImageBlob(text: string, tx?: string): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1280;
+  canvas.height = 720;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not create image canvas.");
+
+  const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, "#07130c");
+  gradient.addColorStop(0.55, "#12542e");
+  gradient.addColorStop(1, "#e5ff5c");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.strokeStyle = "rgba(248, 243, 231, 0.28)";
+  context.lineWidth = 4;
+  for (let x = -80; x < canvas.width; x += 130) {
+    context.beginPath();
+    context.moveTo(x, 720);
+    context.lineTo(x + 420, 0);
+    context.stroke();
+  }
+  context.fillStyle = "rgba(0,0,0,0.32)";
+  context.fillRect(72, 78, 1136, 564);
+  context.strokeStyle = "rgba(248, 243, 231, 0.28)";
+  context.strokeRect(72, 78, 1136, 564);
+
+  context.fillStyle = "#f8f3e7";
+  context.font = "700 76px Georgia, serif";
+  context.fillText("Panenka", 118, 178);
+  context.font = "700 38px Georgia, serif";
+  context.fillText("onchain penalty duel on X Layer", 124, 232);
+
+  context.font = "800 62px Georgia, serif";
+  const words = text.split(" ");
+  let line = "";
+  let y = 350;
+  for (const word of words) {
+    const next = `${line}${word} `;
+    if (context.measureText(next).width > 980 && line) {
+      context.fillText(line, 124, y);
+      line = `${word} `;
+      y += 78;
+    } else {
+      line = next;
+    }
+  }
+  context.fillText(line, 124, y);
+
+  context.fillStyle = "#44f4c4";
+  context.font = "700 30px Georgia, serif";
+  context.fillText("Hidden plan. Reveal. No draw. Settled onchain.", 124, 592);
+  if (tx) {
+    context.fillStyle = "rgba(248,243,231,0.72)";
+    context.font = "24px ui-monospace, SFMono-Regular, Menlo, monospace";
+    context.fillText(shortHash(tx), 124, 632);
+  }
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not export result image."))), "image/png", 0.95);
+  });
 }
 
 function xLayerChainIdHex() {
@@ -236,8 +381,8 @@ function makePlan(player: `0x${string}`): StoredPlan {
   const entropy = new Uint8Array(32);
   crypto.getRandomValues(entropy);
   const seed = Number(BigInt(keccak256(entropy)) % 1000000n);
-  const shots = Array.from({ length: 5 }, (_, index) => (seed + index) % 3) as DirectionPlan;
-  const saves = Array.from({ length: 5 }, (_, index) => (seed + index + 1) % 3) as DirectionPlan;
+  const shots = Array.from({ length: 10 }, (_, index) => (seed + index) % 3) as DirectionPlan;
+  const saves = Array.from({ length: 10 }, (_, index) => (seed + index + 1) % 3) as DirectionPlan;
   crypto.getRandomValues(entropy);
   return { duelId: 0, shots, saves, salt: keccak256(toHex(entropy)) };
 }
@@ -245,7 +390,7 @@ function makePlan(player: `0x${string}`): StoredPlan {
 function commitment(player: `0x${string}`, shots: DirectionPlan, saves: DirectionPlan, salt: `0x${string}`) {
   return keccak256(
     encodeAbiParameters(
-      [{ type: "address" }, { type: "uint8[5]" }, { type: "uint8[5]" }, { type: "bytes32" }],
+      [{ type: "address" }, { type: "uint8[10]" }, { type: "uint8[10]" }, { type: "bytes32" }],
       [player, shots, saves, salt],
     ),
   );
@@ -355,6 +500,7 @@ function App() {
           <a href="#replay">Replay</a>
           <a href="#leaderboard">Leaderboard</a>
           <a href="#me">Me</a>
+          <a href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">Faucet</a>
           {account ? (
             <>
               <button onClick={connect}>{short(account)}</button>
@@ -639,6 +785,7 @@ function Play({
   const [nextDuelId, setNextDuelId] = useState<number | null>(null);
   const [tokenId, setTokenId] = useState<bigint>(0n);
   const [ownedCountry, setOwnedCountry] = useState("");
+  const [ownedCountryId, setOwnedCountryId] = useState(0);
   const [balance, setBalance] = useState<bigint>(0n);
   const [storedPlanIds, setStoredPlanIds] = useState<number[]>([]);
   const [botBusy, setBotBusy] = useState(false);
@@ -709,10 +856,12 @@ function Play({
           args: [currentTokenId],
         })) as readonly unknown[];
         const countryId = Number(stats[0]);
+        setOwnedCountryId(countryId);
         setOwnedCountry(countryById[countryId] ?? `Country ${countryId}`);
         if (countryOptionById[countryId]) setSelectedCountry(countryOptionById[countryId]);
       } else {
         setOwnedCountry("");
+        setOwnedCountryId(0);
       }
     } catch (error) {
       notify(error instanceof Error ? error.message : "Read failed.");
@@ -805,7 +954,20 @@ function Play({
 
   async function mintKicker() {
     if (tokenId > 0n) {
-      notify(`${ownedCountry || "Your"} kicker #${tokenId} is already minted. Country is fixed for this wallet on this deployment.`);
+      if (selectedCountry.id === ownedCountryId) {
+        notify(`${ownedCountry || "Your"} kicker #${tokenId} is ready. Pick a different country if you want to switch teams.`);
+        return;
+      }
+      await write(
+        () =>
+          walletClient().writeContract({
+            address: addresses.kickerNft!,
+            abi: kickerNftAbi,
+            functionName: "changeCountry",
+            args: [selectedCountry.id],
+          }),
+        `Switching team to ${selectedCountry.name}`,
+      );
       return;
     }
     await write(
@@ -1032,9 +1194,9 @@ function Play({
           const duelId = BigInt(args.duelId);
           const p1Score = Number(args.p1Score);
           const p2Score = Number(args.p2Score);
-          const winner = args.draw ? "Draw" : short(args.winner);
-          setSettlementText(args.draw ? `Duel #${duelId} settled as a ${p1Score}-${p2Score} draw.` : `Duel #${duelId} settled: ${winner} won ${p1Score}-${p2Score}.`);
-          void enrichSettlementText(duelId, args.winner, p1Score, p2Score, Boolean(args.draw));
+          const winner = short(args.winner);
+          setSettlementText(`Duel #${duelId} settled: ${winner} won ${p1Score}-${p2Score}.`);
+          void enrichSettlementText(duelId, args.winner, p1Score, p2Score);
           continue;
         }
         if (decoded.eventName === "DuelForfeited") {
@@ -1048,7 +1210,7 @@ function Play({
     if (rounds.length) setRoundResults(rounds.sort((a, b) => a.round - b.round));
   }
 
-  async function enrichSettlementText(duelId: bigint, winner: `0x${string}`, p1Score: number, p2Score: number, draw: boolean) {
+  async function enrichSettlementText(duelId: bigint, winner: `0x${string}`, p1Score: number, p2Score: number) {
     try {
       const duel = (await publicClient.readContract({
         address: addresses.penaltyDuel!,
@@ -1064,7 +1226,7 @@ function Play({
       const p2Country = countryById[Number((p2Stats as readonly unknown[])[0])] ?? `Country ${(p2Stats as readonly unknown[])[0]}`;
       const winnerCountry = winner.toLowerCase() === duel.p1.player.toLowerCase() ? p1Country : p2Country;
       const result = `${p1Country} ${p1Score}-${p2Score} ${p2Country}`;
-      setSettlementText(draw ? `Duel #${duelId}: ${result} draw on X Layer.` : `Duel #${duelId}: ${result}. Winner: ${winnerCountry}.`);
+      setSettlementText(`Duel #${duelId}: ${result}. Winner: ${winnerCountry}.`);
     } catch {
       // The wallet-visible settlement text above is still valid if an RPC read races indexing.
     }
@@ -1177,6 +1339,50 @@ function Play({
     }
   }
 
+  async function downloadResultImage() {
+    if (!settlementText) {
+      notify("Settle a duel first, then download the result image.");
+      return;
+    }
+    try {
+      const blob = await resultImageBlob(settlementText, lastTx);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `panenka-duel-${revealDuelId || joinDuelId || "result"}.png`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      notify("Result image downloaded. Attach it to your X post for better visibility.");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not generate result image.");
+    }
+  }
+
+  async function shareResultImage() {
+    if (!settlementText) {
+      notify("Settle a duel first, then share the result image.");
+      return;
+    }
+    try {
+      const blob = await resultImageBlob(settlementText, lastTx);
+      const file = new File([blob], `panenka-duel-${revealDuelId || joinDuelId || "result"}.png`, { type: "image/png" });
+      const sharePayload = {
+        title: "Panenka result",
+        text: `${settlementText}\n\nPlayed on @PanenkaGG, built on @XLayerOfficial.`,
+        files: [file],
+      };
+      if ((navigator as any).canShare?.(sharePayload)) {
+        await (navigator as any).share(sharePayload);
+        notify("Result image shared.");
+        return;
+      }
+      await downloadResultImage();
+      window.open(shareResultUrl(settlementText), "_blank", "noopener,noreferrer");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not share result image.");
+    }
+  }
+
   return (
     <section className="page">
       <p className="eyebrow">Play path</p>
@@ -1224,13 +1430,10 @@ function Play({
           <strong>{settlementText}</strong>
           {roundResults.length ? (
             <div className="revealStage">
-              <div className="miniGoal">
-                <div className={`miniKeeper keeper-${roundResults[Math.max(animatedRound - 1, 0)]?.botGoal ? "wrong" : "save"}`}>GK</div>
-                <div className={`miniBall ball-${roundResults[Math.max(animatedRound - 1, 0)]?.youGoal ? "goal" : "save"}`} />
-              </div>
+              <ShootoutVisualizer round={roundResults[Math.max(animatedRound - 1, 0)]} />
               <div>
                 <span>Live reveal</span>
-                <strong>Round {animatedRound || 1} of 5</strong>
+                <strong>Round {animatedRound || 1} of {roundResults.length}</strong>
                 <p>{roundResults[Math.max(animatedRound - 1, 0)]?.youGoal ? "Your shot beats the keeper." : "Keeper reads your shot."}</p>
               </div>
             </div>
@@ -1247,6 +1450,8 @@ function Play({
           ) : null}
           {lastTx ? <a href={txLink(lastTx)} target="_blank" rel="noreferrer">Open settlement tx</a> : null}
           <a href={shareResultUrl(settlementText)} target="_blank" rel="noreferrer">Share result on X</a>
+          <button onClick={downloadResultImage}>Download result image</button>
+          <button onClick={shareResultImage}>Share image if supported</button>
           <button onClick={copyTesterReport}>Copy tester report</button>
         </article>
       ) : null}
@@ -1261,7 +1466,7 @@ function Play({
           <li><strong>Need gas:</strong> use the official <a href={XLAYER_TESTNET_FAUCET} target="_blank" rel="noreferrer">X Layer testnet faucet</a> if your wallet has no OKB.</li>
           <li><strong>Friend path:</strong> create a duel, copy the invite link, and send it to a remote friend. They join from their own wallet.</li>
           <li><strong>Important:</strong> the same browser that created or joined must reveal, because the hidden plan is stored locally.</li>
-          <li><strong>Proof:</strong> after settlement, the app shows winner, score, five round outcomes, and the X Layer transaction.</li>
+          <li><strong>Proof:</strong> after settlement, the app shows winner, score, resolved kick sequence, and the X Layer transaction.</li>
         </ol>
       </article>
 
@@ -1270,14 +1475,13 @@ function Play({
           <h3>1. Wallet setup</h3>
           <p className="muted">
             {tokenId > 0n
-              ? `This wallet already owns ${ownedCountry || "a"} kicker #${tokenId}. Country is fixed after mint; use a fresh wallet to represent another country.`
+              ? `This wallet owns kicker #${tokenId}. Current team: ${ownedCountry || "unknown"}. Pick another country and confirm the switch before creating a duel.`
               : "Pick a country before minting. Each wallet gets one country kicker; this becomes your duel identity and stat card."}
           </p>
           <div className="countryGrid">
             {countries.map((country) => (
               <button
                 className={selectedCountry.id === country.id ? "selected" : ""}
-                disabled={tokenId > 0n}
                 key={country.id}
                 onClick={() => setSelectedCountry(country)}
               >
@@ -1286,7 +1490,13 @@ function Play({
             ))}
           </div>
           <div className="actionRow">
-            <button onClick={account ? mintKicker : connect}>{tokenId > 0n ? `${ownedCountry || "Country"} Kicker #${tokenId}` : "Mint kicker"}</button>
+            <button onClick={account ? mintKicker : connect}>
+              {tokenId > 0n
+                ? selectedCountry.id === ownedCountryId
+                  ? `${ownedCountry || "Country"} Kicker #${tokenId}`
+                  : `Switch to ${selectedCountry.name}`
+                : "Mint kicker"}
+            </button>
           </div>
         </article>
 
@@ -1307,7 +1517,7 @@ function Play({
             <input value={stake} onChange={(event) => setStake(event.target.value)} />
           </label>
           <p className="muted">
-            Your wallet commits a hidden five-round plan. The chain sees only the hash until you reveal.
+            Your wallet commits a hidden shootout plan. The chain sees only the hash until you reveal.
             {botHealth ? ` Panenka Bot joins up to ${botHealth.publicStakeCap} DCR; larger entries need a human wallet.` : ""}
           </p>
           <button onClick={createDuel} disabled={creatingDuel}>{creatingDuel ? "Creating..." : "Create hidden duel"}</button>
@@ -1359,8 +1569,8 @@ function Play({
         </div>
         <div className="row">
           <span>Settlement tx</span>
-          <a href={txLink("0x8ac7ec41c0e1ca9eb0cee210ca52bf4835758d7081bce53ea2a84f0a2922ad9b")} target="_blank" rel="noreferrer">
-            0x8ac7...ad9b
+          <a href={txLink(PROOF_SETTLEMENT_TX)} target="_blank" rel="noreferrer">
+            {shortHash(PROOF_SETTLEMENT_TX)}
           </a>
         </div>
       </article>
@@ -1369,29 +1579,12 @@ function Play({
 }
 
 function roundsFromDuelState(duel: any) {
-  const rounds: RoundResult[] = [];
-  let p1Score = 0;
-  let p2Score = 0;
-  for (let index = 0; index < 5; index++) {
-    const p1Shot = Number(duel.p1.shots[index]);
-    const p1Save = Number(duel.p1.saves[index]);
-    const p2Shot = Number(duel.p2.shots[index]);
-    const p2Save = Number(duel.p2.saves[index]);
-    const p1Goal = p1Shot !== p2Save;
-    const p2Goal = p2Shot !== p1Save;
-    if (p1Goal) p1Score += 1;
-    if (p2Goal) p2Score += 1;
-    rounds.push({
-      round: index + 1,
-      youGoal: p1Goal,
-      botGoal: p2Goal,
-      p1Shot,
-      p2Shot,
-      p1Save,
-      p2Save,
-    });
-  }
-  return { rounds, score: `${p1Score}-${p2Score}` };
+  return scoreShootout(
+    Array.from(duel.p1.shots ?? []).map(Number),
+    Array.from(duel.p1.saves ?? []).map(Number),
+    Array.from(duel.p2.shots ?? []).map(Number),
+    Array.from(duel.p2.saves ?? []).map(Number),
+  );
 }
 
 function commitRevealFromDuelState(duel: any): CommitRevealPair {
@@ -1417,13 +1610,13 @@ function PlanGrid({ plan }: { plan?: CommitRevealPlan }) {
   return (
     <div className="planGrid">
       <span>shots</span>
-      {Array.from({ length: 5 }, (_, index) => (
+      {Array.from({ length: 10 }, (_, index) => (
         <strong title={directionName(shots[index])} key={`shot-${index}`}>
           {directionArrow(shots[index])}
         </strong>
       ))}
       <span>saves</span>
-      {Array.from({ length: 5 }, (_, index) => (
+      {Array.from({ length: 10 }, (_, index) => (
         <strong title={directionName(saves[index])} key={`save-${index}`}>
           {directionArrow(saves[index])}
         </strong>
@@ -1447,7 +1640,7 @@ function CommitRevealMoment({
     <article className="commitRevealMoment">
       <div className="commitRevealHeader">
         <span>Protocol moment</span>
-        <strong>Hidden hash becomes a five-round plan.</strong>
+        <strong>Hidden hash becomes a shootout plan.</strong>
       </div>
       <div className="commitRevealColumns">
         {[
@@ -1567,8 +1760,8 @@ function Replay() {
       <p className="eyebrow">Replay proof</p>
       <h2>Watch a settled duel straight from X Layer.</h2>
       <p className="lede compact">
-        This page does not need a wallet. It loads the latest settled duel from live contract state, reconstructs the five
-        kicks, and falls back to the original proof transaction if the live feed is unavailable.
+        This page does not need a wallet. It loads the latest settled duel from live contract state, reconstructs the
+        resolved kicks, and falls back to the original proof transaction if the live feed is unavailable.
       </p>
 
       <div className="statusPanel">
@@ -1586,12 +1779,9 @@ function Replay() {
         </div>
         <CommitRevealMoment sideOne={sideOne} sideTwo={sideTwo} commitReveal={commitReveal} />
         <div className="revealStage replayStageLarge">
-          <div className="miniGoal">
-            <div className={`miniKeeper keeper-${currentRound?.botGoal ? "wrong" : "save"}`}>GK</div>
-            <div className={`miniBall ball-${currentRound?.youGoal ? "goal" : "save"}`} />
-          </div>
+          <ShootoutVisualizer round={currentRound} />
           <div>
-            <span>Round {animatedRound || 1} of 5</span>
+            <span>Round {animatedRound || 1} of {rounds.length || 1}</span>
             <strong>{currentRound?.youGoal ? `${sideOne} scores` : `${sideTwo} keeper saves`}</strong>
             <p>
               Shot {currentRound?.p1Shot ?? "-"} vs save {currentRound?.p2Save ?? "-"} · {sideTwo} shot{" "}

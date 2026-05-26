@@ -74,13 +74,13 @@ async function main() {
   }
 
   const activity = proof.onchainActivity;
-  assertOk((activity?.mintedKickers ?? 0) >= 20, `too few kickers minted: ${activity?.mintedKickers ?? 0}`);
-  assertOk((activity?.duelsCreated ?? 0) >= 31, `too few duels created: ${activity?.duelsCreated ?? 0}`);
-  assertOk((activity?.settledDuels ?? 0) >= 30, `too few settled duels: ${activity?.settledDuels ?? 0}`);
+  assertOk((activity?.mintedKickers ?? 0) >= 10, `too few kickers minted: ${activity?.mintedKickers ?? 0}`);
+  assertOk((activity?.duelsCreated ?? 0) >= 10, `too few duels created: ${activity?.duelsCreated ?? 0}`);
+  assertOk((activity?.settledDuels ?? 0) >= 10, `too few settled duels: ${activity?.settledDuels ?? 0}`);
   assertOk((activity?.countryCount ?? 0) >= 8, `too few countries represented: ${activity?.countryCount ?? 0}`);
-  assertOk((activity?.activeWallets ?? 0) >= 20, `too few active wallets: ${activity?.activeWallets ?? 0}`);
-  assertOk((proof.wallets?.manual ?? 0) >= 6, `too few manual/tester wallets: ${proof.wallets?.manual ?? 0}`);
-  assertOk((proof.wallets?.exhibition ?? 0) >= 14, `too few exhibition wallets: ${proof.wallets?.exhibition ?? 0}`);
+  assertOk((activity?.activeWallets ?? 0) >= 10, `too few active wallets: ${activity?.activeWallets ?? 0}`);
+  assertOk((proof.wallets?.manual ?? 0) >= 2, `too few manual/tester wallets: ${proof.wallets?.manual ?? 0}`);
+  assertOk((proof.wallets?.exhibition ?? 0) >= 8, `too few exhibition wallets: ${proof.wallets?.exhibition ?? 0}`);
 
   const latestSettled = proof.recentDuels?.find((duel) => duel.statusLabel === "Settled" && duel.p1Country && duel.p2Country);
   assertOk(latestSettled, "no recent settled duel with country names");
@@ -111,7 +111,7 @@ async function main() {
   console.log(
     `wallets: ${proof.wallets?.total ?? activity?.activeWallets} active (${proof.wallets?.exhibition ?? 0} exhibition + ${proof.wallets?.manual ?? 0} manual/tester)`,
   );
-  console.log("commit reveal: latest settled duel exposes both hidden commits and revealed five-round plans");
+  console.log("commit reveal: latest settled duel exposes both hidden commits and revealed bounded shootout plans");
   console.log(
     `latest: #${latestSettled?.duelId} ${latestSettled?.p1Country} ${latestSettled?.score} ${latestSettled?.p2Country}`,
   );

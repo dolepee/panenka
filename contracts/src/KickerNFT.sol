@@ -31,6 +31,7 @@ contract KickerNFT {
     event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
     event DuelContractSet(address indexed duelContract);
     event KickerMinted(address indexed player, uint256 indexed tokenId, uint8 countryId);
+    event KickerCountryChanged(address indexed player, uint256 indexed tokenId, uint8 countryId);
     event KickerStatsUpdated(uint256 indexed tokenId, uint32 wins, uint32 losses, uint32 streak, uint32 level);
 
     error NotOwner();
@@ -75,6 +76,15 @@ contract KickerNFT {
 
         emit Transfer(address(0), msg.sender, tokenId);
         emit KickerMinted(msg.sender, tokenId, countryId);
+    }
+
+    function changeCountry(uint8 countryId) external {
+        if (countryId == 0 || countryId > MAX_COUNTRY_ID) revert InvalidCountry();
+        uint256 tokenId = tokenOfOwner[msg.sender];
+        if (tokenId == 0) revert TokenNotFound();
+
+        statsOf[tokenId].countryId = countryId;
+        emit KickerCountryChanged(msg.sender, tokenId, countryId);
     }
 
     function approve(address spender, uint256 tokenId) external {
