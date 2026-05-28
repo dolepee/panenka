@@ -9,3 +9,4 @@ broadcast/
 .env.local
 .DS_Store
 .vercel
+tmp/
