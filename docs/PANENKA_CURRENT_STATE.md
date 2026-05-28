@@ -103,7 +103,7 @@ Treat the live endpoints as canonical if this snapshot is lower than the current
 - At least `10` country kickers. Achieved: `14`.
 - At least `8` countries visible in the country leaderboard. Achieved: `8`.
 - At least `5` manual/tester wallets. Achieved: `6` currently counted by `/api/proof`.
-- At least `3` external tester wallets. Achieved through the friend testing round; keep collecting more before the final demo.
+- At least `3` external tester wallets. Achieved through the friend testing round; keep collecting more before final submission.
 - At least `3` public X posts showing rivalry results and tagging `@XLayerOfficial`.
 
 ## Intentional Scope Cuts

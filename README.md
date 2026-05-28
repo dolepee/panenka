@@ -120,7 +120,7 @@ npm run verify:duel
 npm run verify:live
 ```
 
-`npm run verify:live` checks the production app, `/api/proof`, `/api/leaderboard`, Panenka Bot readiness, and the latest settlement tx before recording or submitting.
+`npm run verify:live` checks the production app, `/api/proof`, `/api/leaderboard`, Panenka Bot readiness, and the latest settlement tx before submitting.
 
 Deploy after filling `.env`:
 
@@ -149,7 +149,7 @@ set -a && source .env && set +a
 npm run exhibition:run
 ```
 
-The exhibition runner derives deterministic test wallets from `EXHIBITION_SEED`, funds them from `EXHIBITION_FUNDER_PRIVATE_KEY` or `DEPLOYER_PRIVATE_KEY`, rotates countries, settles multiple duels, and prints `PANENKA_EXHIBITION_VALID`. Use it to build visible X Layer activity before recording the final demo.
+The exhibition runner derives deterministic test wallets from `EXHIBITION_SEED`, funds them from `EXHIBITION_FUNDER_PRIVATE_KEY` or `DEPLOYER_PRIVATE_KEY`, rotates countries, settles multiple duels, and prints `PANENKA_EXHIBITION_VALID`. Use it to build visible X Layer activity before final submission.
 
 Frontend:
 
@@ -194,4 +194,4 @@ Fast judge path:
 
 ## Scope Guard
 
-This MVP intentionally cuts real USDT staking, prediction markets, player likenesses, live match feeds, spectator betting, chat, and cross-chain mechanics. The winning demo is the penalty reveal loop plus verifiable X Layer events.
+This MVP intentionally cuts real USDT staking, prediction markets, player likenesses, live match feeds, spectator betting, chat, and cross-chain mechanics. The winning submission is the penalty reveal loop plus verifiable X Layer events.
