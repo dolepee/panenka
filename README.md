@@ -16,6 +16,17 @@ Public testers can play with one wallet against Panenka Bot. The contract still 
 
 Current live X Layer activity is returned by `/api/proof` and `/api/leaderboard` so the README does not go stale as testers create more duels, kickers, countries, and active player wallets.
 
+## 60-Second Judge Path
+
+If you only have one minute, use the deployed proof surfaces instead of trusting a video:
+
+1. Open [`/#replay`](https://panenka-alpha.vercel.app/#replay) to watch the latest settled duel reconstructed from X Layer state.
+2. Open [`/#leaderboard`](https://panenka-alpha.vercel.app/#leaderboard) to see country and kicker rankings from `KickerNFT` stats.
+3. Open [`/api/proof`](https://panenka-alpha.vercel.app/api/proof) to inspect contracts, safety boundaries, activity counts, recent duels, settlement txs, and verifier commands.
+4. Run `npm run verify:live` to replay the production proof path from the repo.
+
+Latest verified production snapshot: `24` settled duels, `14` active wallets, `6` manual/tester wallets, `8` countries, and latest settlement tx `0xe83808f3d3b12b75fa202b5f5dc0bb8435b1f49e29df11a93fa80ea6885ca4a7`.
+
 ## Why This Fits X Cup, By Criterion
 
 - **Innovation:** the primitive is a commit/reveal hidden-plan duel. The same mechanic works for any zero-sum game with hidden choices; World Cup penalty shootouts are the first wrapper.
