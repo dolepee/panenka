@@ -2,7 +2,9 @@
 
 ![Panenka on X Layer](app/public/panenka-card.png)
 
-Hidden-plan duels on X Layer. Two wallets commit a sealed shootout strategy as a `bytes32` hash, reveal, and the contract settles an IFAB-style penalty sequence with early stops, sudden death, onchain stats, and a country leaderboard. No oracle, no live match feed, no betting.
+Penalty shootouts, the way every World Cup fan already understands them. Pick a country, plan your shots and saves in secret, watch the contract settle onchain on X Layer. No oracle, no betting, no draws.
+
+Two wallets commit a sealed shootout strategy as a `bytes32` hash, reveal, and the contract settles an IFAB-style penalty sequence with early stops, sudden death, onchain stats, and a country leaderboard.
 
 The protocol primitive is the commit/reveal hidden-plan duel. The penalty shootout is the cultural wrapper that makes World Cup fans understand it instantly.
 
@@ -191,6 +193,28 @@ Fast judge path:
 1. Open `https://panenka-alpha.vercel.app/#replay` to watch the latest settled X Layer duel without a wallet.
 2. Open `https://panenka-alpha.vercel.app/#leaderboard` to see country rivalry and kicker rankings read from `KickerNFT`.
 3. Open `https://panenka-alpha.vercel.app/api/proof` for machine-readable X Layer proof, `npm run verify:live` for current production activity, and `npm run verify:duel` for repo-pinned proof replay.
+
+## Reviewer Questions
+
+### Is the bot actually fair, or can a tester predict its plan?
+
+The bot's plan is derived from `keccak256("panenka:" + duelId + ":" + secret)` where `secret` is a private server-side env var that must be configured at deploy time (the bot handler throws otherwise). The seed is unguessable without the secret. The bot reveals only after the tester reveals, so testers cannot observe its plan before locking their own.
+
+### Can the tie-break be manipulated?
+
+No. If ten kicks finish tied, the contract computes `keccak256(duelId, p1Commit, p2Commit, p1Shots, p2Shots, p1Saves, p2Saves) % 2` to decide the winner. All inputs are locked at commit time. Neither player can predict or steer the outcome at the moment they lock their plan. Covered by `testTiedAfterTenUsesDeterministicTiebreak`.
+
+### What stops a Sybil farm of fake duels?
+
+Each duel needs DuelCredit from the faucet (100 DCR per 24-hour cooldown, per address). A meaningful Sybil farm needs many wallets each waiting a day. DuelCredit is non-transferable so no real value moves through fake activity.
+
+### Why no real-money staking?
+
+Explicit "game not gamble" framing. DuelCredit is non-transferable in-game credit only. No real-money betting, no FIFA or official World Cup branding, no player likenesses, no live-match oracle. The submission avoids the IP and gambling regulatory surface entirely.
+
+### What's novel?
+
+The primitive is a commit/reveal hidden-plan duel: both players post a `bytes32` commitment, then reveal a bounded shootout plan. The penalty shootout is the cultural wrapper that makes football fans understand it in one screen. The same primitive generalizes to any zero-sum game with hidden choices.
 
 ## Scope Guard
 

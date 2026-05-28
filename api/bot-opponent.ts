@@ -54,7 +54,10 @@ type Plan = {
 };
 
 function botPlan(duelId: bigint): Plan {
-  const secret = process.env.BOT_COMMIT_SECRET ?? BOT_PRIVATE_KEY ?? "panenka-bot";
+  const secret = process.env.BOT_COMMIT_SECRET ?? BOT_PRIVATE_KEY;
+  if (!secret) {
+    throw new Error("Bot secret not configured: set BOT_COMMIT_SECRET or BOT_PRIVATE_KEY");
+  }
   const seed = BigInt(keccak256(toHex(`panenka:${duelId.toString()}:${secret}`)));
   const shots = Array.from({ length: 10 }, (_, index) => Number((seed >> BigInt(index * 8)) % 3n)) as Plan["shots"];
   const saves = Array.from({ length: 10 }, (_, index) => Number((seed >> BigInt(80 + index * 8)) % 3n)) as Plan["saves"];
